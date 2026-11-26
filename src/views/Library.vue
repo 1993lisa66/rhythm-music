@@ -274,14 +274,14 @@ const pickSort = (key) => {
 }
 
 .sec--playlists {
-  top: 492px;
+  top: 476px;
 }
 
 /* 列表卡片 342 × 220 r20 */
 .card {
   position: absolute;
   left: 24px;
-  top: 244px;
+  top: 242px;
   width: 342px;
   height: 220px;
   border-radius: var(--r-card);
@@ -352,7 +352,7 @@ const pickSort = (key) => {
   flex: 0 0 auto;
 }
 
-/* 我的歌单：2 × 152×116 */
+/* 我的歌单：2 × 152×116，标题 476–500，卡片从 512 起 */
 .pls {
   position: absolute;
   left: 24px;

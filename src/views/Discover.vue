@@ -166,7 +166,7 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
 }
 
 .sec--recent {
-  top: 546px;
+  top: 540px;
 }
 
 /* 精选封面：342 × 176 r20 */
@@ -268,20 +268,20 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
   transform: scale(0.96);
 }
 
-/* 最近播放 */
+/* 最近播放：标题 540–564，列表 576 起，与标题留出 12px 呼吸 */
 .recent {
   position: absolute;
   left: 24px;
   right: 24px;
-  top: 568px;
+  top: 576px;
 }
 
 .rrow {
   width: 100%;
-  height: 44px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   text-align: left;
   border-radius: 12px;
   transition: background 0.16s ease;
@@ -292,8 +292,8 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
 }
 
 .rrow__cover {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--r-thumb);
   flex: 0 0 auto;
   background-color: var(--surface-cover);
