@@ -161,10 +161,6 @@ export const api = {
     request(`/favorites/${encodeURIComponent(songId)}/toggle`, { method: 'POST' }),
   recent: () => request('/recent'),
   clearRecent: () => request('/recent', { method: 'DELETE' }),
-  downloads: () => request('/downloads'),
-  removeDownload: (songId) =>
-    request(`/downloads/${encodeURIComponent(songId)}`, { method: 'DELETE' }),
-  clearDownloads: () => request('/downloads', { method: 'DELETE' }),
 
   // 我的
   profile: () => request('/me/profile'),

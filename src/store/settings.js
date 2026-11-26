@@ -1,4 +1,4 @@
-/** 播放与下载设置：存在服务端（每个用户一份），这里做本地镜像。 */
+/** 播放设置：存在服务端（每个用户一份），这里做本地镜像。 */
 
 import { reactive } from 'vue'
 import { api } from '@/api/client'
@@ -7,14 +7,12 @@ export const QUALITIES = ['标准', '高品质', '无损']
 
 export const settings = reactive({
   quality: '高品质',
-  wifiOnly: true,
   showLyrics: true
 })
 
 function apply(payload) {
   if (!payload) return
   settings.quality = payload.quality
-  settings.wifiOnly = !!payload.wifiOnly
   settings.showLyrics = !!payload.showLyrics
 }
 
@@ -23,7 +21,7 @@ export function applySettings(payload) {
 }
 
 export function resetSettings() {
-  apply({ quality: '高品质', wifiOnly: true, showLyrics: true })
+  apply({ quality: '高品质', showLyrics: true })
 }
 
 export async function loadSettings() {

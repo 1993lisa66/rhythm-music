@@ -19,7 +19,6 @@ export const data = reactive({
   albums: null,
   recent: null,
   favorites: null,
-  downloads: null,
   profile: null,
   hot: null,
   recommend: null,
@@ -95,7 +94,6 @@ export function resetData() {
   data.albums = null
   data.recent = null
   data.favorites = null
-  data.downloads = null
   data.profile = null
   data.hot = null
   data.recommend = null
@@ -144,11 +142,6 @@ export async function refreshRecent() {
 export async function refreshFavorites() {
   data.favorites = await api.favorites()
   return data.favorites
-}
-
-export async function refreshDownloads() {
-  data.downloads = await api.downloads()
-  return data.downloads
 }
 
 export async function refreshProfile() {

@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
 import Switch from '@/components/Switch.vue'
@@ -8,7 +7,6 @@ import ActionSheet from '@/components/ActionSheet.vue'
 import { QUALITIES, settings } from '@/store/settings'
 import { toast } from '@/store/toast'
 
-const router = useRouter()
 const picker = ref(false)
 const cache = ref('12.4 MB')
 
@@ -36,7 +34,7 @@ const clearCache = () => {
     <div class="page__canvas settings">
       <PageNav title="设置" fallback="/profile" />
 
-      <p class="group-label">播放与下载</p>
+      <p class="group-label">播放</p>
       <div class="group">
         <button type="button" class="row" @click="picker = true">
           <span class="row__icon"><Icon name="note" :size="19" :stroke="1.8" /></span>
@@ -44,12 +42,6 @@ const clearCache = () => {
           <span class="row__value">{{ settings.quality }}</span>
           <Icon class="row__chevron" name="chevron" :size="14" :stroke="1.8" />
         </button>
-
-        <div class="row">
-          <span class="row__icon"><Icon name="wifi" :size="19" :stroke="1.8" /></span>
-          <span class="row__name">仅 Wi-Fi 下载</span>
-          <Switch v-model="settings.wifiOnly" label="仅 Wi-Fi 下载" />
-        </div>
 
         <div class="row">
           <span class="row__icon"><Icon name="quote" :size="19" :stroke="1.8" /></span>
@@ -60,13 +52,6 @@ const clearCache = () => {
 
       <p class="group-label">存储</p>
       <div class="group">
-        <button type="button" class="row" @click="router.push('/downloads')">
-          <span class="row__icon"><Icon name="download" :size="19" :stroke="1.8" /></span>
-          <span class="row__name">离线歌曲</span>
-          <span class="row__value">10 首</span>
-          <Icon class="row__chevron" name="chevron" :size="14" :stroke="1.8" />
-        </button>
-
         <button type="button" class="row" @click="clearCache">
           <span class="row__icon"><Icon name="trash" :size="19" :stroke="1.8" /></span>
           <span class="row__name">清除缓存</span>

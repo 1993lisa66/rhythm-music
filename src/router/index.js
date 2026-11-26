@@ -9,7 +9,6 @@ import NowPlaying from '../views/NowPlaying.vue'
 import Queue from '../views/Queue.vue'
 import Lyrics from '../views/Lyrics.vue'
 import Settings from '../views/Settings.vue'
-import Downloads from '../views/Downloads.vue'
 import Recent from '../views/Recent.vue'
 import MyLists from '../views/MyLists.vue'
 import Favorites from '../views/Favorites.vue'
@@ -60,12 +59,6 @@ const routes = [
     name: 'queue',
     component: Queue,
     meta: { tab: 'discover', title: '播放队列', subpage: true }
-  },
-  {
-    path: '/downloads',
-    name: 'downloads',
-    component: Downloads,
-    meta: { tab: 'profile', title: '离线下载', subpage: true }
   },
   {
     path: '/recent',

@@ -100,8 +100,7 @@ const actions = computed(() => {
       icon: 'heart',
       active: favorited.value
     },
-    { key: 'share', label: '分享歌单', icon: 'share' },
-    { key: 'downloads', label: '查看离线下载', icon: 'download' }
+    { key: 'share', label: '分享歌单', icon: 'share' }
   ]
   if (owned.value) {
     list.unshift({ key: 'add', label: '添加歌曲', icon: 'plus' })
@@ -218,8 +217,6 @@ const onPick = async (key) => {
     } catch {
       toast('当前环境不支持复制链接')
     }
-  } else if (key === 'downloads') {
-    router.push('/downloads')
   }
 }
 </script>
