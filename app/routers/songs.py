@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..deps import get_optional_user, user_id_of
+from ..errors import ApiError, not_found
+from ..lyrics_source import fetch_lyrics
 from ..models import LyricLine, Song, User
 from ..schemas import GenreListOut, LyricsOut, SongListOut, SongOut
 from ..services import favorite_ids, get_song, song_out
@@ -92,4 +94,38 @@ def get_lyrics(song_id: str, db: Session = Depends(get_db)) -> dict:
         "title": song.title,
         "has_lyrics": bool(lines),
         "lines": [{"t": line.t, "text": line.text} for line in lines],
+    }
+
+
+@router.post(
+    "/songs/{song_id}/lyrics/fetch",
+    response_model=LyricsOut,
+    summary="在线查找歌词并保存到曲库",
+)
+def fetch_song_lyrics(song_id: str, db: Session = Depends(get_db)) -> dict:
+    """从 LRCLIB 按歌名 / 歌手 / 时长精确匹配，命中后覆盖本地歌词。
+
+    未收录返回 404；歌词服务不可达返回 502。找不到时不会写入任何猜测内容。
+    """
+    song = get_song(db, song_id)
+    try:
+        lines = fetch_lyrics(song.title, song.artist, song.duration)
+    except RuntimeError as error:
+        raise ApiError(502, "lyrics_source_error", str(error)) from error
+    if not lines:
+        raise not_found("歌词库暂未收录这首歌", code="lyrics_not_found")
+
+    db.execute(delete(LyricLine).where(LyricLine.song_id == song_id))
+    db.add_all(
+        [
+            LyricLine(song_id=song_id, position=index, t=item["t"], text=item["text"])
+            for index, item in enumerate(lines)
+        ]
+    )
+    db.commit()
+    return {
+        "song_id": song_id,
+        "title": song.title,
+        "has_lyrics": True,
+        "lines": lines,
     }

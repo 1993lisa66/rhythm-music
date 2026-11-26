@@ -220,5 +220,338 @@
         "id": "mn2544"
       }
     ]
+  },
+  {
+    "id": "cai",
+    "title": "蔡小虎 · 演歌精选",
+    "badge": "歌手精选",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 10,
+    "durationText": "0.7 小时",
+    "desc": "沙哑的嗓音里，是台语演歌最深的那一层。",
+    "info": "10 首 · 歌手专题",
+    "cover": "covers/album-10.jpg",
+    "tone": "warm",
+    "tracks": [
+      {
+        "id": "mn2451"
+      },
+      {
+        "id": "mn2470"
+      },
+      {
+        "id": "mn2473"
+      },
+      {
+        "id": "mn2476"
+      },
+      {
+        "id": "mn2478"
+      },
+      {
+        "id": "mn2481"
+      },
+      {
+        "id": "mn2487"
+      },
+      {
+        "id": "mn2524"
+      },
+      {
+        "id": "mn2531"
+      },
+      {
+        "id": "mn2545"
+      }
+    ]
+  },
+  {
+    "id": "han",
+    "title": "韩宝仪 · 老歌集",
+    "badge": "歌手精选",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 12,
+    "durationText": "0.8 小时",
+    "desc": "一首接一首，像翻开旧唱片的内页。",
+    "info": "12 首 · 歌手专题",
+    "cover": "covers/album-09.jpg",
+    "tone": "sunset",
+    "tracks": [
+      {
+        "id": "mn2455"
+      },
+      {
+        "id": "mn2460"
+      },
+      {
+        "id": "mn2465"
+      },
+      {
+        "id": "mn2468"
+      },
+      {
+        "id": "mn2490"
+      },
+      {
+        "id": "mn2498"
+      },
+      {
+        "id": "mn2508"
+      },
+      {
+        "id": "mn2511"
+      },
+      {
+        "id": "mn2516"
+      },
+      {
+        "id": "mn2522"
+      },
+      {
+        "id": "mn2529"
+      },
+      {
+        "id": "mn2544"
+      }
+    ]
+  },
+  {
+    "id": "long",
+    "title": "龙千玉 · 情缘集",
+    "badge": "歌手精选",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 11,
+    "durationText": "0.8 小时",
+    "desc": "唱尽情深缘浅，也唱尽不舍。",
+    "info": "11 首 · 歌手专题",
+    "cover": "covers/album-11.jpg",
+    "tone": "plum",
+    "tracks": [
+      {
+        "id": "mn2462"
+      },
+      {
+        "id": "mn2471"
+      },
+      {
+        "id": "mn2481"
+      },
+      {
+        "id": "mn2494"
+      },
+      {
+        "id": "mn2505"
+      },
+      {
+        "id": "mn2510"
+      },
+      {
+        "id": "mn2517"
+      },
+      {
+        "id": "mn2518"
+      },
+      {
+        "id": "mn2536"
+      },
+      {
+        "id": "mn2539"
+      },
+      {
+        "id": "mn2545"
+      }
+    ]
+  },
+  {
+    "id": "fang",
+    "title": "方瑞娥 · 台语精选",
+    "badge": "歌手精选",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 9,
+    "durationText": "0.6 小时",
+    "desc": "车站、夜色和走不完的路。",
+    "info": "9 首 · 歌手专题",
+    "cover": "covers/album-04.jpg",
+    "tone": "cool",
+    "tracks": [
+      {
+        "id": "mn2459"
+      },
+      {
+        "id": "mn2503"
+      },
+      {
+        "id": "mn2504"
+      },
+      {
+        "id": "mn2512"
+      },
+      {
+        "id": "mn2515"
+      },
+      {
+        "id": "mn2526"
+      },
+      {
+        "id": "mn2546"
+      },
+      {
+        "id": "mn2547"
+      },
+      {
+        "id": "mn2548"
+      }
+    ]
+  },
+  {
+    "id": "lin",
+    "title": "林良欢 · 抒情集",
+    "badge": "歌手精选",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 6,
+    "durationText": "0.5 小时",
+    "desc": "把心事放进歌里，慢慢唱给你听。",
+    "info": "6 首 · 歌手专题",
+    "cover": "covers/album-05.jpg",
+    "tone": "sage",
+    "tracks": [
+      {
+        "id": "mn2456"
+      },
+      {
+        "id": "mn2477"
+      },
+      {
+        "id": "mn2493"
+      },
+      {
+        "id": "mn2509"
+      },
+      {
+        "id": "mn2535"
+      },
+      {
+        "id": "mn2549"
+      }
+    ]
+  },
+  {
+    "id": "jia",
+    "title": "甲子慧 · 少女心",
+    "badge": "歌手精选",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 6,
+    "durationText": "0.4 小时",
+    "desc": "倔强又柔软的那些年。",
+    "info": "6 首 · 歌手专题",
+    "cover": "covers/album-08.jpg",
+    "tone": "plum",
+    "tracks": [
+      {
+        "id": "mn2461"
+      },
+      {
+        "id": "mn2482"
+      },
+      {
+        "id": "mn2495"
+      },
+      {
+        "id": "mn2496"
+      },
+      {
+        "id": "mn2540"
+      },
+      {
+        "id": "mn2542"
+      }
+    ]
+  },
+  {
+    "id": "night",
+    "title": "深夜独听 · 台语夜曲",
+    "badge": "场景歌单",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 9,
+    "durationText": "0.7 小时",
+    "desc": "夜深了，把音量调小一点。",
+    "info": "9 首 · 台语夜曲",
+    "cover": "covers/album-02.jpg",
+    "tone": "deep",
+    "tracks": [
+      {
+        "id": "mn2454"
+      },
+      {
+        "id": "mn2466"
+      },
+      {
+        "id": "mn2468"
+      },
+      {
+        "id": "mn2498"
+      },
+      {
+        "id": "mn2507"
+      },
+      {
+        "id": "mn2514"
+      },
+      {
+        "id": "mn2521"
+      },
+      {
+        "id": "mn2523"
+      },
+      {
+        "id": "mn2528"
+      }
+    ]
+  },
+  {
+    "id": "drink",
+    "title": "酒意人生 · 台语酒歌",
+    "badge": "场景歌单",
+    "featuredBadge": null,
+    "creator": "阿韵",
+    "count": 8,
+    "durationText": "0.6 小时",
+    "desc": "酒是舞伴，歌是心事。",
+    "info": "8 首 · 台语酒歌",
+    "cover": "covers/album-01.jpg",
+    "tone": "warm",
+    "tracks": [
+      {
+        "id": "mn2455"
+      },
+      {
+        "id": "mn2457"
+      },
+      {
+        "id": "mn2473"
+      },
+      {
+        "id": "mn2497"
+      },
+      {
+        "id": "mn2506"
+      },
+      {
+        "id": "mn2508"
+      },
+      {
+        "id": "mn2515"
+      },
+      {
+        "id": "mn2539"
+      }
+    ]
   }
 ]

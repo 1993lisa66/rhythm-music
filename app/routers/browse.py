@@ -15,7 +15,7 @@ from ..services import favorite_ids, get_content, playlist_summary, recent_group
 
 router = APIRouter(tags=["browse"])
 
-DISCOVER_RECENT_LIMIT = 2
+DISCOVER_RECENT_LIMIT = 10
 
 
 def _songs_by_ids(db: Session, ids: list[str], liked: set[str]) -> list[dict]:

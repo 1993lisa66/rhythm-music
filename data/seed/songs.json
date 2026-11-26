@@ -41,7 +41,7 @@
     "duration": 243,
     "cover": "/covers/album-02.jpg",
     "audio": "audio/mn2454.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2455",
@@ -74,7 +74,7 @@
     "duration": 251,
     "cover": "/covers/album-01.jpg",
     "audio": "audio/mn2457.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2458",
@@ -107,7 +107,7 @@
     "duration": 226,
     "cover": "/covers/album-08.jpg",
     "audio": "audio/mn2460.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2461",
@@ -140,7 +140,7 @@
     "duration": 261,
     "cover": "/covers/album-06.jpg",
     "audio": "audio/mn2463.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2464",
@@ -173,7 +173,7 @@
     "duration": 207,
     "cover": "/covers/album-02.jpg",
     "audio": "audio/mn2466.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2467",
@@ -195,7 +195,7 @@
     "duration": 246,
     "cover": "/covers/album-02.jpg",
     "audio": "audio/mn2468.mp3",
-    "liked": true
+    "liked": false
   },
   {
     "id": "mn2469",
@@ -206,7 +206,7 @@
     "duration": 271,
     "cover": "/covers/album-08.jpg",
     "audio": "audio/mn2469.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2470",
@@ -239,7 +239,7 @@
     "duration": 283,
     "cover": "/covers/album-11.jpg",
     "audio": "audio/mn2472.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2473",
@@ -272,7 +272,7 @@
     "duration": 232,
     "cover": "/covers/album-07.jpg",
     "audio": "audio/mn2475.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2476",
@@ -305,7 +305,7 @@
     "duration": 230,
     "cover": "/covers/album-11.jpg",
     "audio": "audio/mn2478.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2479",
@@ -338,7 +338,7 @@
     "duration": 282,
     "cover": "/covers/album-10.jpg",
     "audio": "audio/mn2481.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2482",
@@ -371,7 +371,7 @@
     "duration": 238,
     "cover": "/covers/album-05.jpg",
     "audio": "audio/mn2484.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2485",
@@ -382,7 +382,7 @@
     "duration": 273,
     "cover": "/covers/album-08.jpg",
     "audio": "audio/mn2485.mp3",
-    "liked": true
+    "liked": false
   },
   {
     "id": "mn2486",
@@ -404,7 +404,7 @@
     "duration": 280,
     "cover": "/covers/album-10.jpg",
     "audio": "audio/mn2487.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2488",
@@ -437,7 +437,7 @@
     "duration": 241,
     "cover": "/covers/album-11.jpg",
     "audio": "audio/mn2490.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2491",
@@ -470,7 +470,7 @@
     "duration": 262,
     "cover": "/covers/album-09.jpg",
     "audio": "audio/mn2493.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2494",
@@ -503,7 +503,7 @@
     "duration": 274,
     "cover": "/covers/album-09.jpg",
     "audio": "audio/mn2496.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2497",
@@ -536,7 +536,7 @@
     "duration": 225,
     "cover": "/covers/album-08.jpg",
     "audio": "audio/mn2499.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2500",
@@ -602,7 +602,7 @@
     "duration": 296,
     "cover": "/covers/album-09.jpg",
     "audio": "audio/mn2505.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2506",
@@ -635,7 +635,7 @@
     "duration": 286,
     "cover": "/covers/album-01.jpg",
     "audio": "audio/mn2508.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2509",
@@ -668,7 +668,7 @@
     "duration": 249,
     "cover": "/covers/album-03.jpg",
     "audio": "audio/mn2511.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2512",
@@ -701,7 +701,7 @@
     "duration": 280,
     "cover": "/covers/album-02.jpg",
     "audio": "audio/mn2514.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2515",
@@ -734,7 +734,7 @@
     "duration": 317,
     "cover": "/covers/album-12.jpg",
     "audio": "audio/mn2517.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2518",
@@ -756,7 +756,7 @@
     "duration": 296,
     "cover": "/covers/album-03.jpg",
     "audio": "audio/mn2519.mp3",
-    "liked": true
+    "liked": false
   },
   {
     "id": "mn2520",
@@ -767,7 +767,7 @@
     "duration": 258,
     "cover": "/covers/album-07.jpg",
     "audio": "audio/mn2520.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2521",
@@ -800,7 +800,7 @@
     "duration": 291,
     "cover": "/covers/album-02.jpg",
     "audio": "audio/mn2523.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2524",
@@ -833,7 +833,7 @@
     "duration": 248,
     "cover": "/covers/album-04.jpg",
     "audio": "audio/mn2526.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2527",
@@ -866,7 +866,7 @@
     "duration": 249,
     "cover": "/covers/album-07.jpg",
     "audio": "audio/mn2529.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2530",
@@ -899,7 +899,7 @@
     "duration": 266,
     "cover": "/covers/album-06.jpg",
     "audio": "audio/mn2532.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2533",
@@ -932,7 +932,7 @@
     "duration": 246,
     "cover": "/covers/album-09.jpg",
     "audio": "audio/mn2535.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2536",
@@ -943,7 +943,7 @@
     "duration": 247,
     "cover": "/covers/album-05.jpg",
     "audio": "audio/mn2536.mp3",
-    "liked": true
+    "liked": false
   },
   {
     "id": "mn2537",
@@ -965,7 +965,7 @@
     "duration": 248,
     "cover": "/covers/album-04.jpg",
     "audio": "audio/mn2538.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2539",
@@ -998,7 +998,7 @@
     "duration": 299,
     "cover": "/covers/album-05.jpg",
     "audio": "audio/mn2541.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2542",
@@ -1031,7 +1031,7 @@
     "duration": 225,
     "cover": "/covers/album-03.jpg",
     "audio": "audio/mn2544.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2545",
@@ -1064,7 +1064,7 @@
     "duration": 262,
     "cover": "/covers/album-03.jpg",
     "audio": "audio/mn2547.mp3",
-    "liked": false
+    "liked": true
   },
   {
     "id": "mn2548",
@@ -1097,6 +1097,6 @@
     "duration": 161,
     "cover": "/covers/album-07.jpg",
     "audio": "audio/mn2550.mp3",
-    "liked": false
+    "liked": true
   }
 ]
