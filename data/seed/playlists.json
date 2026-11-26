@@ -1,0 +1,75 @@
+[
+  {
+    "id": "sunset-walk",
+    "title": "日落漫游 · 黄昏电台",
+    "badge": "私人歌单",
+    "featuredBadge": "编辑精选",
+    "creator": "阿韵",
+    "count": 38,
+    "durationText": "2.4 小时",
+    "desc": "在黄昏时分，给自己一段慢下来的时间。",
+    "info": "38 首 · 适合独处的黄金时刻",
+    "cover": "/covers/cover_5.jpg",
+    "tone": "sunset",
+    "tracks": [
+      { "id": "wanfeng" },
+      { "id": "xiaoban" },
+      { "id": "riluo", "duration": 318 },
+      { "id": "qinglang", "duration": 278 }
+    ]
+  },
+  {
+    "id": "private",
+    "title": "私人收藏",
+    "badge": "私人歌单",
+    "creator": "阿韵",
+    "count": 128,
+    "durationText": "6.1 小时",
+    "desc": "所有一听就舍不得划走的歌，都收在这里。",
+    "info": "128 首 · 反复循环的心头好",
+    "cover": "/covers/cover_13.jpg",
+    "tone": "warm",
+    "tracks": [
+      { "id": "qingtian" },
+      { "id": "huanghun" },
+      { "id": "xinghe" },
+      { "id": "manxialai" }
+    ]
+  },
+  {
+    "id": "commute",
+    "title": "通勤路上",
+    "badge": "场景歌单",
+    "creator": "阿韵",
+    "count": 46,
+    "durationText": "2.9 小时",
+    "desc": "地铁进站的那一秒，刚好踩上节拍。",
+    "info": "46 首 · 让路程变短一点",
+    "cover": "/covers/cover_14.jpg",
+    "tone": "cool",
+    "tracks": [
+      { "id": "chengshiye" },
+      { "id": "wuye" },
+      { "id": "shanye" },
+      { "id": "zaochun" }
+    ]
+  },
+  {
+    "id": "study",
+    "title": "深夜书房",
+    "badge": "场景歌单",
+    "creator": "阿韵",
+    "count": 28,
+    "durationText": "1.8 小时",
+    "desc": "台灯亮着，世界安静下来。",
+    "info": "28 首 · 低照度聆听清单",
+    "cover": "/covers/cover_15.jpg",
+    "tone": "deep",
+    "tracks": [
+      { "id": "manxialai" },
+      { "id": "shanye" },
+      { "id": "xinghe" },
+      { "id": "huanghun" }
+    ]
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "greeting": "下午好，阿韵",
+  "headline": "今天想听点什么？",
+  "searchPlaceholder": "搜索歌曲、歌手、歌单",
+  "featured": {
+    "sectionTitle": "今日推荐",
+    "more": "全部 ›",
+    "playlistId": "sunset-walk"
+  },
+  "moods": {
+    "title": "随心听",
+    "items": [
+      { "name": "治愈", "tone": "sage", "genre": "治愈" },
+      { "name": "专注", "tone": "honey", "genre": "轻音乐" },
+      { "name": "入眠", "tone": "plum", "genre": "民谣" }
+    ]
+  },
+  "recent": {
+    "title": "最近播放",
+    "more": "全部 ›",
+    "songIds": ["qingtian", "wanfeng"]
+  }
+}
