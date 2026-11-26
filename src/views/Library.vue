@@ -1,18 +1,29 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import SectionHeader from '@/components/SectionHeader.vue'
 import SongRow from '@/components/SongRow.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
-import library from '@/data/library.json'
-import playlists from '@/data/playlists.json'
-import { allSongs, current, getSong, playSong, state } from '@/store/player'
+import { data, refreshAlbums, refreshLibrary } from '@/store/data'
+import { current, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
 import { coverStyle, fmtTime } from '@/utils/format'
 
 const router = useRouter()
-const tab = ref(library.tabs[0])
+
+const EMPTY = {
+  title: '音乐库',
+  searchPlaceholder: '搜索我的音乐',
+  tabs: ['歌曲', '歌单', '专辑'],
+  recent: { title: '最近添加', more: '', items: [] },
+  playlists: { title: '我的歌单', items: [] }
+}
+
+const library = computed(() => data.library || EMPTY)
+/* tab 用「选中值」而不是下标，首屏数据回来前留空，由 activeTab 兜底到第一个 */
+const tab = ref('')
+const activeTab = computed(() => tab.value || library.value.tabs[0] || '歌曲')
 
 const SORTS = [
   { key: 'default', label: '默认顺序' },
@@ -29,30 +40,25 @@ const sortActions = computed(() =>
 )
 
 const songRows = computed(() => {
-  const rows = library.recent.songIds.map(getSong).filter(Boolean)
+  const rows = library.value.recent.items.slice()
   if (sortKey.value === 'default') return rows
-  const copy = rows.slice()
-  if (sortKey.value === 'title') copy.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans-CN'))
-  else if (sortKey.value === 'duration') copy.sort((a, b) => a.duration - b.duration)
-  else if (sortKey.value === 'artist') copy.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-Hans-CN'))
-  return copy
+  if (sortKey.value === 'title') rows.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans-CN'))
+  else if (sortKey.value === 'duration') rows.sort((a, b) => a.duration - b.duration)
+  else if (sortKey.value === 'artist') rows.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-Hans-CN'))
+  return rows
 })
 
 const songIds = computed(() => songRows.value.map((s) => s.id))
-const playlistRows = computed(() =>
-  library.playlists.ids.map((id) => playlists.find((p) => p.id === id)).filter(Boolean)
-)
-const albumRows = computed(() => {
-  const seen = new Map()
-  allSongs.forEach((s) => {
-    if (!seen.has(s.album)) seen.set(s.album, s)
-  })
-  return [...seen.values()].slice(0, 3)
-})
+const playlistRows = computed(() => library.value.playlists.items)
+/* 专辑视图直接用 /library/albums 的聚合结果，避免前端再猜分组口径 */
+const albumRows = computed(() => (data.albums || []).slice(0, 3))
 
 const isRowActive = (song) => current.value.id === song.id && state.playing
 
 const playRow = (song) => playSong(song.id, songIds.value)
+const playAlbum = (album) => {
+  if (album.trackIds.length) playSong(album.trackIds[0], album.trackIds)
+}
 const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
 
 const pickSort = (key) => {
@@ -61,6 +67,14 @@ const pickSort = (key) => {
   const label = SORTS.find((s) => s.key === key)?.label || ''
   toast(`已切换：${label}`)
 }
+
+onMounted(async () => {
+  try {
+    await Promise.all([refreshLibrary(), refreshAlbums()])
+  } catch (error) {
+    toast(error?.message || '加载音乐库失败')
+  }
+})
 </script>
 
 <template>
@@ -86,8 +100,8 @@ const pickSort = (key) => {
           type="button"
           role="tab"
           class="tab"
-          :class="{ 'tab--on': tab === t }"
-          :aria-selected="tab === t"
+          :class="{ 'tab--on': activeTab === t }"
+          :aria-selected="activeTab === t"
           @click="tab = t"
         >
           {{ t }}
@@ -107,7 +121,7 @@ const pickSort = (key) => {
       />
 
       <div class="card">
-        <template v-if="tab === '歌曲'">
+        <template v-if="activeTab === '歌曲'">
           <SongRow
             v-for="song in songRows"
             :key="song.id"
@@ -117,7 +131,7 @@ const pickSort = (key) => {
           />
         </template>
 
-        <template v-else-if="tab === '歌单'">
+        <template v-else-if="activeTab === '歌单'">
           <button
             v-for="p in playlistRows"
             :key="p.id"
@@ -137,14 +151,14 @@ const pickSort = (key) => {
         <template v-else>
           <button
             v-for="a in albumRows"
-            :key="a.album"
+            :key="a.name"
             type="button"
             class="crow"
-            @click="playSong(a.id, allSongs.map((s) => s.id))"
+            @click="playAlbum(a)"
           >
             <span class="crow__cover" :style="coverStyle(a.cover)"></span>
             <span class="crow__text">
-              <span class="crow__title">{{ a.album }}</span>
+              <span class="crow__title">{{ a.name }}</span>
               <span class="crow__sub">{{ a.artist }}</span>
             </span>
             <span class="crow__dur num">{{ fmtTime(a.duration) }}</span>

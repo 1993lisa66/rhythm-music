@@ -1,35 +1,53 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import SectionHeader from '@/components/SectionHeader.vue'
-import discover from '@/data/discover.json'
-import playlists from '@/data/playlists.json'
-import { allSongs, current, getSong, playSong, state } from '@/store/player'
+import { data, refreshDiscover } from '@/store/data'
+import { current, playSong, state } from '@/store/player'
 import { coverStyle } from '@/utils/format'
+import { toast } from '@/store/toast'
 
 const router = useRouter()
 
-const featured = computed(
-  () => playlists.find((p) => p.id === discover.featured.playlistId) || playlists[0]
-)
-const recent = computed(() => discover.recent.songIds.map(getSong).filter(Boolean))
+const EMPTY = {
+  greeting: '',
+  headline: '',
+  searchPlaceholder: '搜索歌曲、歌手、歌单',
+  featured: { sectionTitle: '今日推荐', more: '', playlist: null },
+  moods: { title: '随心听', items: [] },
+  recent: { title: '最近播放', more: '', items: [] }
+}
+
+const discover = computed(() => data.discover || EMPTY)
+const featured = computed(() => discover.value.featured.playlist)
+const recent = computed(() => discover.value.recent.items)
 const recentIds = computed(() => recent.value.map((s) => s.id))
 
 const TONE = { sage: 'var(--sage)', honey: 'var(--honey)', plum: 'var(--plum)' }
 
 const isRowActive = (song) => current.value.id === song.id && state.playing
 
-const openFeatured = () => router.push(`/playlist/${featured.value.id}`)
+const openFeatured = () => {
+  if (featured.value) router.push(`/playlist/${featured.value.id}`)
+}
 const openSearch = () => router.push('/search')
 
 const playMood = (mood) => {
-  const list = allSongs.filter((s) => s.genre === mood.genre)
+  const list = data.songs.filter((s) => s.genre === mood.genre)
   if (list.length) playSong(list[0].id, list.map((s) => s.id))
   else router.push({ path: '/search', query: { q: mood.genre } })
 }
 
 const playRecent = (song) => playSong(song.id, recentIds.value)
+
+onMounted(async () => {
+  try {
+    await refreshDiscover()
+  } catch (error) {
+    toast(error?.message || '加载失败')
+  }
+})
 </script>
 
 <template>
@@ -51,6 +69,7 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
       />
 
       <button
+        v-if="featured"
         type="button"
         class="featured"
         :style="coverStyle(featured.cover, 0.56)"
@@ -83,7 +102,7 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
         @more="router.push('/recent')"
       />
 
-      <ul class="recent">
+      <ul v-if="recent.length" class="recent">
         <li v-for="song in recent" :key="song.id">
           <button
             type="button"
@@ -99,6 +118,8 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
           </button>
         </li>
       </ul>
+
+      <p v-else class="recent-empty">还没有播放记录，随便点一首开始吧</p>
     </div>
   </div>
 </template>

@@ -1,34 +1,46 @@
-import { reactive, watch } from 'vue'
+/** 播放与下载设置：存在服务端（每个用户一份），这里做本地镜像。 */
 
-const KEY = 'rhythm.settings'
-
-const read = () => {
-  try {
-    return JSON.parse(window.localStorage.getItem(KEY) || '{}')
-  } catch {
-    return {}
-  }
-}
-
-const saved = read()
+import { reactive } from 'vue'
+import { api } from '@/api/client'
 
 export const QUALITIES = ['标准', '高品质', '无损']
 
-/** 设置项持久化到 localStorage，刷新后仍然生效 */
 export const settings = reactive({
-  quality: QUALITIES.includes(saved.quality) ? saved.quality : '高品质',
-  wifiOnly: typeof saved.wifiOnly === 'boolean' ? saved.wifiOnly : true,
-  showLyrics: typeof saved.showLyrics === 'boolean' ? saved.showLyrics : true
+  quality: '高品质',
+  wifiOnly: true,
+  showLyrics: true
 })
 
-watch(
-  settings,
-  (value) => {
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify(value))
-    } catch {
-      /* 无痕模式写入失败不影响使用 */
-    }
-  },
-  { deep: true }
-)
+function apply(payload) {
+  if (!payload) return
+  settings.quality = payload.quality
+  settings.wifiOnly = !!payload.wifiOnly
+  settings.showLyrics = !!payload.showLyrics
+}
+
+export function applySettings(payload) {
+  apply(payload)
+}
+
+export function resetSettings() {
+  apply({ quality: '高品质', wifiOnly: true, showLyrics: true })
+}
+
+export async function loadSettings() {
+  const payload = await api.settings()
+  apply(payload)
+  return payload
+}
+
+/** 只提交变化的字段，失败时回滚到服务端值 */
+export async function updateSetting(patch) {
+  const snapshot = { ...settings }
+  Object.assign(settings, patch)
+  try {
+    apply(await api.patchSettings(patch))
+    return true
+  } catch (error) {
+    Object.assign(settings, snapshot)
+    throw error
+  }
+}

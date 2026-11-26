@@ -1,11 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import TrackRow from '@/components/TrackRow.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
-import playlists from '@/data/playlists.json'
-import { current, enqueue, getSong, playSong, state } from '@/store/player'
+import { api } from '@/api/client'
+import { current, enqueue, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
 import { goBack } from '@/utils/nav'
@@ -15,19 +15,38 @@ const router = useRouter()
 
 const sheet = ref(false)
 const favorited = ref(false)
+const playlist = ref(null)
 
-const playlist = computed(
-  () => playlists.find((p) => p.id === route.params.id) || playlists[0]
-)
+const EMPTY = {
+  id: '',
+  title: '歌单',
+  badge: '',
+  creator: '',
+  count: 0,
+  trackCount: 0,
+  durationText: '',
+  desc: '',
+  info: '',
+  cover: '',
+  tone: 'primary',
+  tracks: []
+}
 
-const tracks = computed(() =>
-  playlist.value.tracks.map((t) => {
-    const song = getSong(t.id) || {}
-    return { ...song, durationText: t.duration ?? song.duration }
-  })
-)
+const detail = computed(() => playlist.value || EMPTY)
+const tracks = computed(() => detail.value.tracks)
 
 const trackIds = computed(() => tracks.value.map((t) => t.id))
+
+const load = async (id) => {
+  if (!id) return
+  try {
+    playlist.value = await api.playlist(id)
+  } catch (error) {
+    // 歌单不存在（含别人的私有歌单）时提示后回退，不留空白页
+    toast(error?.message || '歌单加载失败')
+    playlist.value = null
+  }
+}
 
 const playAll = () => {
   if (trackIds.value.length) playSong(trackIds.value[0], trackIds.value)
@@ -45,6 +64,10 @@ const shuffleAll = () => {
 const playTrack = (t) => playSong(t.id, trackIds.value)
 
 const back = () => goBack(router, '/discover')
+
+onMounted(() => load(route.params.id))
+/* 从上个歌单直接跳到另一个歌单时组件会复用，需按 id 重新拉取 */
+watch(() => route.params.id, (id) => load(id))
 
 const actions = computed(() => [
   { key: 'queue', label: '添加到播放队列', icon: 'queue' },
@@ -91,16 +114,16 @@ const onPick = async (key) => {
         <Icon name="more" :size="22" />
       </button>
 
-      <div class="hero" :style="coverStyle(playlist.cover, 0.58)">
-        <span class="hero__badge">{{ playlist.badge }}</span>
+      <div class="hero" :style="coverStyle(detail.cover, 0.58)">
+        <span class="hero__badge">{{ detail.badge }}</span>
         <span class="hero__note">
           <Icon name="note" :size="30" :stroke="1.5" />
         </span>
       </div>
 
-      <h1 class="title">{{ playlist.title }}</h1>
-      <p class="info">{{ playlist.creator }} · {{ playlist.count }} 首歌曲 · {{ playlist.durationText }}</p>
-      <p class="desc">{{ playlist.desc }}</p>
+      <h1 class="title">{{ detail.title }}</h1>
+      <p class="info">{{ detail.creator }} · {{ detail.count }} 首歌曲 · {{ detail.durationText }}</p>
+      <p class="desc">{{ detail.desc }}</p>
 
       <div class="actions">
         <button type="button" class="btn btn--primary" @click="playAll">
@@ -117,7 +140,7 @@ const onPick = async (key) => {
           :index="i + 1"
           :title="t.title"
           :artist="t.artist"
-          :duration="t.durationText"
+          :duration="t.duration"
           :active="current.id === t.id && state.playing"
           @select="playTrack(t)"
         />
@@ -126,8 +149,8 @@ const onPick = async (key) => {
 
     <ActionSheet
       :open="sheet"
-      :title="playlist.title"
-      :subtitle="`${playlist.creator} · ${playlist.count} 首`"
+      :title="detail.title"
+      :subtitle="`${detail.creator} · ${detail.count} 首`"
       :actions="actions"
       @pick="onPick"
       @close="sheet = false"

@@ -12,9 +12,19 @@ import Settings from '../views/Settings.vue'
 import Downloads from '../views/Downloads.vue'
 import Recent from '../views/Recent.vue'
 import MyLists from '../views/MyLists.vue'
+import Favorites from '../views/Favorites.vue'
+import Login from '../views/Login.vue'
+import { auth, bootstrap } from '../store/auth'
+import { ensureAppData } from '../store/data'
 
 const routes = [
   { path: '/', redirect: '/discover' },
+  {
+    path: '/login',
+    name: 'login',
+    component: Login,
+    meta: { title: '登录', bare: true, public: true }
+  },
   {
     path: '/discover',
     name: 'discover',
@@ -64,6 +74,12 @@ const routes = [
     meta: { tab: 'profile', title: '最近播放', subpage: true }
   },
   {
+    path: '/favorites',
+    name: 'favorites',
+    component: Favorites,
+    meta: { tab: 'profile', title: '我的收藏', subpage: true }
+  },
+  {
     path: '/mylists',
     name: 'mylists',
     component: MyLists,
@@ -94,6 +110,29 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes,
   scrollBehavior: () => ({ top: 0 })
+})
+
+/**
+ * 路由守卫：未登录一律去登录页（带 redirect），已登录则先确保基础数据就绪。
+ * 登录页自身不加载业务数据，避免刚注册的空账号闪一下别人的内容。
+ */
+router.beforeEach(async (to) => {
+  await bootstrap()
+
+  if (to.meta.public) {
+    return auth.user ? { name: 'discover' } : true
+  }
+
+  if (!auth.user) {
+    return { name: 'login', query: to.fullPath === '/' ? {} : { redirect: to.fullPath } }
+  }
+
+  try {
+    await ensureAppData()
+  } catch (error) {
+    if (error?.status === 401) return { name: 'login' }
+  }
+  return true
 })
 
 export default router

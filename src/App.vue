@@ -1,20 +1,43 @@
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import StatusBar from './components/StatusBar.vue'
 import TabBar from './components/TabBar.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
 import Toast from './components/Toast.vue'
-import { tick } from './store/player'
+import { auth } from './store/auth'
+import { syncPlayer, tick } from './store/player'
+import { loadSettings } from './store/settings'
 
 const route = useRoute()
 const immersive = computed(() => !!route.meta.immersive)
+const bare = computed(() => !!route.meta.bare)
 const subpage = computed(() => !!route.meta.subpage)
+const chrome = computed(() => !immersive.value && !bare.value)
 
 let timer = null
+
+const hydrate = async () => {
+  if (!auth.user) return
+  try {
+    await Promise.all([syncPlayer(), loadSettings()])
+  } catch {
+    /* 播放态加载失败不阻塞页面，页面内操作会再次触发 */
+  }
+}
+
 onMounted(() => {
   timer = window.setInterval(tick, 1000)
+  hydrate()
 })
+
+watch(
+  () => auth.user?.id,
+  (id) => {
+    if (id) hydrate()
+  }
+)
+
 onUnmounted(() => {
   if (timer) window.clearInterval(timer)
 })
@@ -31,7 +54,7 @@ onUnmounted(() => {
         </transition>
       </router-view>
 
-      <template v-if="!immersive">
+      <template v-if="chrome">
         <MiniPlayer :compact="subpage" />
         <TabBar v-if="!subpage" />
       </template>

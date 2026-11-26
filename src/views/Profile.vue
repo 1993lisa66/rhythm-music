@@ -1,22 +1,35 @@
 <script setup>
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
-import profile from '@/data/profile.json'
+import { data, refreshProfile } from '@/store/data'
+import { toast } from '@/store/toast'
 
 const router = useRouter()
 
+const EMPTY = {
+  title: '我的',
+  user: { name: '', id: '', member: '', avatar: '' },
+  stats: [],
+  menu: { title: '我的音乐', items: [] }
+}
+
+const profile = computed(() => data.profile || EMPTY)
+
+/* 入口跳转地址由后端菜单项直接给出（route 字段），前端不再维护一份映射表 */
 const goMenu = (item) => {
-  const routes = {
-    我的收藏: '/playlist/private',
-    最近播放: '/recent',
-    离线下载: '/downloads',
-    我的歌单: '/mylists'
-  }
-  const to = routes[item.name]
-  if (to) router.push(to)
+  if (item.route) router.push(item.route)
 }
 
 const openSettings = () => router.push('/settings')
+
+onMounted(async () => {
+  try {
+    await refreshProfile()
+  } catch (error) {
+    toast(error?.message || '加载个人资料失败')
+  }
+})
 </script>
 
 <template>

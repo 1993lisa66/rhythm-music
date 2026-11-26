@@ -1,15 +1,16 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
-import recent from '@/data/recent.json'
-import { current, getSong, playSong, state } from '@/store/player'
+import { api } from '@/api/client'
+import { data, refreshRecent } from '@/store/data'
+import { current, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
 import { coverStyle, fmtTime } from '@/utils/format'
 
-const groups = ref(
-  recent.groups
-    .map((g) => ({ label: g.label, songs: g.songIds.map(getSong).filter(Boolean) }))
+const groups = computed(() =>
+  (data.recent?.groups || [])
+    .map((g) => ({ label: g.label, songs: g.items }))
     .filter((g) => g.songs.length)
 )
 
@@ -27,11 +28,24 @@ const playAll = () => {
   if (allIds.value.length) playSong(allIds.value[0], allIds.value)
 }
 
-const clear = () => {
+const clear = async () => {
   if (!total.value) return
-  groups.value = []
-  toast('已清空播放记录')
+  try {
+    await api.clearRecent()
+    await refreshRecent()
+    toast('已清空播放记录')
+  } catch (error) {
+    toast(error?.message || '清空失败')
+  }
 }
+
+onMounted(async () => {
+  try {
+    await refreshRecent()
+  } catch (error) {
+    toast(error?.message || '加载最近播放失败')
+  }
+})
 </script>
 
 <template>

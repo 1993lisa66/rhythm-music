@@ -1,26 +1,21 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
-import downloads from '@/data/downloads.json'
-import { current, getSong, playSong, state } from '@/store/player'
+import { api } from '@/api/client'
+import { data, refreshDownloads } from '@/store/data'
+import { current, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
 
-const list = ref(
-  downloads.tracks
-    .map((t) => {
-      const song = getSong(t.id)
-      return song ? { ...song, size: t.size } : null
-    })
-    .filter(Boolean)
-)
-
+const list = computed(() => data.downloads?.items || [])
 const editing = ref(false)
 
-const totalSize = computed(() =>
-  list.value.reduce((sum, s) => sum + (Number.parseFloat(s.size) || 0), 0).toFixed(1)
-)
+/* 体积文案由后端按 MB 汇总好，前端不再自己累加，避免单位和精度两套口径 */
+const totalSize = computed(() => {
+  const text = data.downloads?.totalSize || '0.0 MB'
+  return text.replace(/\s*MB$/i, '')
+})
 
 const ids = computed(() => list.value.map((s) => s.id))
 
@@ -31,17 +26,35 @@ const toggleEdit = () => {
   editing.value = !editing.value
 }
 
-const remove = (song) => {
-  list.value = list.value.filter((s) => s.id !== song.id)
-  if (!list.value.length) editing.value = false
-  toast(`已删除「${song.title}」`)
+const remove = async (song) => {
+  try {
+    await api.removeDownload(song.id)
+    await refreshDownloads()
+    if (!list.value.length) editing.value = false
+    toast(`已删除「${song.title}」`)
+  } catch (error) {
+    toast(error?.message || '删除失败')
+  }
 }
 
-const removeAll = () => {
-  list.value = []
-  editing.value = false
-  toast('已删除全部离线歌曲')
+const removeAll = async () => {
+  try {
+    await api.clearDownloads()
+    await refreshDownloads()
+    editing.value = false
+    toast('已删除全部离线歌曲')
+  } catch (error) {
+    toast(error?.message || '删除失败')
+  }
 }
+
+onMounted(async () => {
+  try {
+    await refreshDownloads()
+  } catch (error) {
+    toast(error?.message || '加载离线歌曲失败')
+  }
+})
 </script>
 
 <template>

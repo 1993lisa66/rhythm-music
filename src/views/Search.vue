@@ -3,8 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import SongRow from '@/components/SongRow.vue'
-import search from '@/data/search.json'
-import { current, playSong, searchSongs, state } from '@/store/player'
+import { api } from '@/api/client'
+import { data, refreshHot, refreshRecommend } from '@/store/data'
+import { current, playSong, state } from '@/store/player'
 import { coverStyle } from '@/utils/format'
 import { goBack } from '@/utils/nav'
 
@@ -13,7 +14,11 @@ const route = useRoute()
 
 const query = ref(typeof route.query.q === 'string' ? route.query.q : '')
 const inputRef = ref(null)
-const hotItems = ref(search.hot.items.slice())
+
+const EMPTY_HOT = { title: '热门搜索', refresh: '换一换', placeholder: '搜索你喜欢的音乐', cancel: '取消', items: [] }
+const hot = computed(() => data.hot || EMPTY_HOT)
+const hotItems = computed(() => hot.value.items)
+const recommend = computed(() => data.recommend || { title: '猜你喜欢', items: [] })
 
 const TONE = {
   primary: 'var(--primary)',
@@ -22,17 +27,41 @@ const TONE = {
   plum: 'var(--plum)'
 }
 
+/**
+ * 搜索走后端 /search（歌名 / 歌手 / 专辑 / 流派都能命中）。
+ * 用请求序号丢弃过期响应，避免快速输入时旧结果覆盖新结果。
+ */
+const results = ref([])
+const searching = ref(false)
+let seq = 0
+
 const normalize = (q) => q.replace(/(系|音乐|歌曲)$/g, '')
-const results = computed(() => {
-  const q = query.value.trim()
-  if (!q) return []
-  const direct = searchSongs(q)
-  return direct.length ? direct : searchSongs(normalize(q))
-})
+
+async function runSearch(keyword) {
+  const mine = ++seq
+  searching.value = true
+  try {
+    const payload = await api.search({ q: keyword, limit: 30 })
+    if (mine !== seq) return
+    let songs = payload.songs
+    const loose = normalize(keyword)
+    // 关键词带「系 / 音乐」这类后缀时命中率低，退一步再搜一次
+    if (!songs.length && loose && loose !== keyword) {
+      const retry = await api.search({ q: loose, limit: 30 })
+      if (mine !== seq) return
+      songs = retry.songs
+    }
+    results.value = songs
+  } catch {
+    if (mine === seq) results.value = []
+  } finally {
+    if (mine === seq) searching.value = false
+  }
+}
+
 const hasQuery = computed(() => query.value.trim().length > 0)
-const recommend = search.recommend.items
-const bigCards = recommend.filter((i) => i.size === 'lg')
-const smallCards = recommend.filter((i) => i.size !== 'lg')
+const bigCards = computed(() => recommend.value.items.filter((i) => i.size === 'lg'))
+const smallCards = computed(() => recommend.value.items.filter((i) => i.size !== 'lg'))
 
 const cancel = () => {
   if (query.value) query.value = ''
@@ -44,15 +73,38 @@ const pickHot = (item) => {
   inputRef.value?.focus()
 }
 
-const refreshHot = () => {
-  hotItems.value = [...hotItems.value.slice(1), hotItems.value[0]]
+const rotateHot = async () => {
+  try {
+    data.hot = await api.refreshHot()
+  } catch {
+    /* 换一换热词失败不影响已展示的词 */
+  }
 }
 
 const playRecommend = (item) => playSong(item.id)
 const playResult = (song) => playSong(song.id, results.value.map((s) => s.id))
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.q) inputRef.value?.focus()
+  try {
+    await Promise.all([refreshHot(), refreshRecommend()])
+  } catch {
+    /* 热词 / 推荐失败时页面仍可搜索 */
+  }
+})
+
+/* 输入即搜：250ms 去抖，空关键词清空结果 */
+let searchTimer = null
+watch(query, (value) => {
+  const keyword = value.trim()
+  if (searchTimer) window.clearTimeout(searchTimer)
+  if (!keyword) {
+    seq += 1
+    results.value = []
+    searching.value = false
+    return
+  }
+  searchTimer = window.setTimeout(() => runSearch(keyword), 250)
 })
 
 /* 支持带 q 的深链，且在已打开搜索页时同步关键词 */
@@ -76,7 +128,7 @@ watch(
           type="text"
           inputmode="search"
           enterkeyhint="search"
-          :placeholder="search.placeholder"
+          :placeholder="hot.placeholder"
           aria-label="搜索音乐"
         />
         <button v-if="query" type="button" class="sbox__clear" aria-label="清空" @click="query = ''">
@@ -84,12 +136,12 @@ watch(
         </button>
       </div>
 
-      <button type="button" class="cancel" @click="cancel">{{ search.cancel }}</button>
+      <button type="button" class="cancel" @click="cancel">{{ hot.cancel }}</button>
 
       <template v-if="!hasQuery">
         <div class="sec sec--hot">
-          <h2 class="sec__title">{{ search.hot.title }}</h2>
-          <button type="button" class="sec__more" @click="refreshHot">{{ search.hot.refresh }}</button>
+          <h2 class="sec__title">{{ hot.title }}</h2>
+          <button type="button" class="sec__more" @click="rotateHot">{{ hot.refresh }}</button>
         </div>
 
         <div class="chips">
@@ -105,7 +157,7 @@ watch(
           </button>
         </div>
 
-        <h2 class="sec sec--rec">{{ search.recommend.title }}</h2>
+        <h2 class="sec sec--rec">{{ recommend.title }}</h2>
 
         <div class="rec">
           <div class="rec__row rec__row--lg">

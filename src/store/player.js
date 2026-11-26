@@ -1,185 +1,220 @@
-import { reactive, computed } from 'vue'
-import songs from '@/data/songs.json'
-import lyricsData from '@/data/lyrics.json'
+/**
+ * 播放器状态：以服务端为准。
+ *
+ * 约定：
+ * - 所有控制动作都调后端接口，接口直接返回完整播放态，前端整体覆盖即可；
+ * - 只有进度条推进是本地做的（每秒 +1s），避免每秒写库；
+ *   拖动进度、暂停、切歌时才把进度上报。
+ */
+
+import { computed, reactive, watch } from 'vue'
+import { api } from '@/api/client'
 import { clamp } from '@/utils/format'
+import { toast } from './toast'
+import { ensureLyrics, lyricsOf, songsById } from './data'
 
-const byId = Object.fromEntries(songs.map((s) => [s.id, s]))
-
-export const allSongs = songs
-export const getSong = (id) => byId[id]
-export const getPlaylistSongs = (ids = []) => ids.map((id) => byId[id]).filter(Boolean)
-
-const DEFAULT_QUEUE = [
-  'wanfeng',
-  'xiaoban',
-  'riluo',
-  'qinglang',
-  'huanghun',
-  'xinghe',
-  'shanye',
-  'chengshiye',
-  'manxialai',
-  'zaochun',
-  'wuye',
-  'qingtian'
-]
+const EMPTY = {
+  id: '',
+  title: '',
+  artist: '',
+  album: '',
+  cover: '',
+  duration: 1,
+  liked: false
+}
 
 export const state = reactive({
-  queue: DEFAULT_QUEUE.slice(),
+  queue: [],
+  current: null,
   index: 0,
   playing: false,
-  /** 与设计稿对齐：晚风 01:28 / 03:42 */
-  position: 88,
+  position: 0,
+  duration: 0,
   shuffle: false,
-  /** all | one | off */
   repeat: 'all',
-  liked: Object.fromEntries(songs.map((s) => [s.id, !!s.liked]))
+  liked: {}
 })
 
-export const current = computed(() => byId[state.queue[state.index]] || songs[0])
-export const queueSongs = computed(() => state.queue.map((id) => byId[id]).filter(Boolean))
-export const progress = computed(() => clamp(state.position / current.value.duration, 0, 1))
+export const current = computed(() => state.current || EMPTY)
+export const queueSongs = computed(() => state.queue)
+export const progress = computed(() => clamp(state.position / (state.duration || 1), 0, 1))
 export const elapsedText = computed(() => {
   const m = Math.floor(state.position / 60)
   const s = state.position % 60
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 })
-
-export const currentLyrics = computed(() => lyricsData[current.value.id]?.lines || [])
+export const currentLyrics = computed(() => lyricsOf(state.current?.id))
 export const lyricIndex = computed(() => {
   const lines = currentLyrics.value
-  let idx = 0
+  let index = 0
   lines.forEach((line, i) => {
-    if (state.position >= line.t) idx = i
+    if (state.position >= line.t) index = i
   })
-  return idx
+  return index
 })
 
 export const isLiked = (id) => !!state.liked[id]
 
-export function playSong(id, queue) {
-  const q = queue && queue.length ? queue.slice() : state.queue.slice()
-  let i = q.indexOf(id)
-  if (i < 0) {
-    q.push(id)
-    i = q.length - 1
-  }
-  state.queue = q
-  state.index = i
-  state.position = 0
-  state.playing = true
+/** 用接口返回的播放态整体覆盖本地状态 */
+function apply(payload) {
+  if (!payload) return
+  state.queue = payload.queue || []
+  state.current = payload.current || null
+  state.index = payload.index || 0
+  state.playing = !!payload.playing
+  state.position = payload.position || 0
+  state.duration = payload.duration || 0
+  state.shuffle = !!payload.shuffle
+  state.repeat = payload.repeat || 'all'
+  state.queue.forEach((song) => {
+    state.liked[song.id] = song.liked
+  })
+  if (payload.current) state.liked[payload.current.id] = payload.liked
+  if (payload.current?.id) ensureLyrics(payload.current.id)
 }
 
-export function toggle() {
-  state.playing = !state.playing
+/** 收藏状态变了以后，同步本地 @id → liked 映射（供列表页复用） */
+export function syncLiked(songId, liked) {
+  state.liked[songId] = liked
+  if (songsById[songId]) songsById[songId].liked = liked
+}
+
+async function attempt(run, fallback) {
+  try {
+    return await run()
+  } catch (error) {
+    toast(error?.message || fallback)
+    return null
+  }
+}
+
+export async function syncPlayer() {
+  const payload = await attempt(() => api.player(), '获取播放状态失败')
+  apply(payload)
+  return payload
+}
+
+export async function playSong(id, queue) {
+  if (!id) return
+  const payload = await attempt(
+    () => api.play({ songId: id, queueIds: queue && queue.length ? queue : null }),
+    '播放失败'
+  )
+  apply(payload)
+}
+
+export async function toggle() {
+  const payload = await attempt(() => api.toggle(), '操作失败')
+  apply(payload)
+}
+
+export async function next(auto = false) {
+  const payload = await attempt(() => api.next(auto), '切歌失败')
+  apply(payload)
+}
+
+export async function prev() {
+  const payload = await attempt(() => api.prev(), '切歌失败')
+  apply(payload)
 }
 
 /** 队列页：跳到指定位置播放 */
-export function playAt(index) {
-  if (index < 0 || index >= state.queue.length) return
-  state.index = index
-  state.position = 0
-  state.playing = true
+export async function playAt(index) {
+  const song = state.queue[index]
+  if (!song) return
+  await playSong(song.id)
 }
 
-/** 追加到队列尾部（自动去重），返回实际新增数量 */
-export function enqueue(ids = []) {
-  let added = 0
-  ids.forEach((id) => {
-    if (byId[id] && !state.queue.includes(id)) {
-      state.queue.push(id)
-      added += 1
-    }
-  })
-  return added
+/** 追加到队列（后端自动去重），返回实际新增数量 */
+export async function enqueue(ids = []) {
+  const before = state.queue.length
+  const payload = await attempt(() => api.enqueue(ids), '加入队列失败')
+  if (payload) await syncPlayer()
+  return Math.max(state.queue.length - before, 0)
 }
 
-/** 从队列移除一项，保持当前播放项索引正确 */
-export function removeAt(index) {
-  if (state.queue.length <= 1 || index < 0 || index >= state.queue.length) return false
-  const wasCurrent = index === state.index
-  state.queue.splice(index, 1)
-  if (index < state.index) state.index -= 1
-  else if (wasCurrent) {
-    state.index = Math.min(state.index, state.queue.length - 1)
-    state.position = 0
-  }
+/** 从队列移除一项；返回是否成功（队列至少保留一首） */
+export async function removeAt(index) {
+  if (state.queue.length <= 1) return false
+  const payload = await attempt(() => api.removeFromQueue(index), '移除失败')
+  if (!payload) return false
+  apply(payload)
   return true
 }
 
-/** 清空队列，仅保留当前播放曲目 */
-export function clearQueue() {
-  state.queue = [state.queue[state.index]]
-  state.index = 0
-  state.position = 0
+export async function clearQueue() {
+  const payload = await attempt(() => api.clearQueue(), '清空队列失败')
+  apply(payload)
 }
 
-export function next(auto = false) {
-  if (state.repeat === 'one' && auto) {
-    state.position = 0
-    return
-  }
-  if (state.shuffle && state.queue.length > 1) {
-    let n = state.index
-    while (n === state.index) n = Math.floor(Math.random() * state.queue.length)
-    state.index = n
-  } else if (state.index >= state.queue.length - 1) {
-    if (auto && state.repeat === 'off') {
-      state.position = current.value.duration
-      state.playing = false
+let seekTimer = null
+/** 拖动进度：先本地跟手，再防抖上报服务端 */
+export function seek(ratio) {
+  if (!state.duration) return
+  state.position = Math.round(clamp(ratio, 0, 1) * state.duration)
+  if (seekTimer) window.clearTimeout(seekTimer)
+  seekTimer = window.setTimeout(() => {
+    seekTimer = null
+    api.progress({ position: state.position }).catch(() => {})
+  }, 220)
+}
+
+let advancing = false
+export function tick() {
+  if (!state.playing || !state.duration) return
+  if (state.position + 1 >= state.duration) {
+    if (state.repeat === 'one') {
+      state.position = 0
       return
     }
-    state.index = 0
-  } else {
-    state.index += 1
-  }
-  state.position = 0
-  state.playing = true
-}
-
-export function prev() {
-  if (state.position > 3) {
-    state.position = 0
-    return
-  }
-  state.index = state.index <= 0 ? state.queue.length - 1 : state.index - 1
-  state.position = 0
-  state.playing = true
-}
-
-export function seek(ratio) {
-  state.position = Math.round(clamp(ratio, 0, 1) * current.value.duration)
-}
-
-export function tick() {
-  if (!state.playing) return
-  const dur = current.value.duration
-  if (state.position + 1 >= dur) {
-    if (state.repeat === 'one') state.position = 0
-    else next(true)
+    if (advancing) return
+    advancing = true
+    next(true).finally(() => {
+      advancing = false
+    })
     return
   }
   state.position += 1
 }
 
-export function toggleLike(id = current.value.id) {
-  state.liked[id] = !state.liked[id]
+export async function toggleLike(id = current.value.id) {
+  if (!id) return
+  const wasLiked = !!state.liked[id]
+  syncLiked(id, !wasLiked)
+  const payload = await attempt(() => api.toggleFavorite(id), '收藏失败')
+  if (!payload) {
+    syncLiked(id, wasLiked)
+    return
+  }
+  syncLiked(id, payload.liked)
 }
 
-export function toggleShuffle() {
-  state.shuffle = !state.shuffle
+export async function toggleShuffle() {
+  const payload = await attempt(() => api.shuffle(), '操作失败')
+  apply(payload)
 }
 
-export function cycleRepeat() {
-  state.repeat = state.repeat === 'all' ? 'one' : state.repeat === 'one' ? 'off' : 'all'
+export async function cycleRepeat() {
+  const payload = await attempt(() => api.repeat(), '操作失败')
+  apply(payload)
   return state.repeat
 }
 
-/** 按关键字过滤全部曲目（歌名 / 歌手 / 专辑） */
+/** 关键字搜索：直接在已加载的曲库里过滤，保证输入即出结果 */
 export function searchSongs(keyword) {
   const k = keyword.trim().toLowerCase()
   if (!k) return []
-  return songs.filter((s) =>
-    [s.title, s.artist, s.album, s.genre].some((t) => t.toLowerCase().includes(k))
+  return Object.values(songsById).filter((song) =>
+    [song.title, song.artist, song.album, song.genre].some((text) =>
+      String(text || '').toLowerCase().includes(k)
+    )
   )
 }
+
+/** 首次拿到播放态后预加载当前曲歌词 */
+watch(
+  () => state.current?.id,
+  (id) => {
+    if (id) ensureLyrics(id)
+  }
+)

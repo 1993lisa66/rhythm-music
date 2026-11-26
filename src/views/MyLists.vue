@@ -1,13 +1,24 @@
 <script setup>
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
-import playlists from '@/data/playlists.json'
+import { data, refreshPlaylists } from '@/store/data'
+import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
 
 const router = useRouter()
 
+const playlists = computed(() => data.playlists)
 const open = (p) => router.push(`/playlist/${p.id}`)
+
+onMounted(async () => {
+  try {
+    await refreshPlaylists()
+  } catch (error) {
+    toast(error?.message || '加载歌单失败')
+  }
+})
 </script>
 
 <template>
