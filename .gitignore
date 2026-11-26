@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *.db
+*.db.bak*
 *.db-journal
 *.db-wal
 *.db-shm
