@@ -1,4 +1,4 @@
-"""歌曲与歌词。"""
+"""歌曲与歌词（内容类接口：匿名可读，带令牌时附加 liked 状态）。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import LyricLine, Song
+from ..deps import get_optional_user, user_id_of
+from ..models import LyricLine, Song, User
 from ..schemas import GenreListOut, LyricsOut, SongListOut, SongOut
 from ..services import favorite_ids, get_song, song_out
 
@@ -25,6 +26,7 @@ def list_songs(
     order: Literal["asc", "desc"] = "asc",
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ) -> dict:
     stmt = select(Song)
@@ -41,7 +43,7 @@ def list_songs(
     if genre:
         stmt = stmt.where(Song.genre == genre)
 
-    liked_ids = favorite_ids(db)
+    liked_ids = favorite_ids(db, user_id_of(user))
     if liked is True:
         if not liked_ids:
             return {"total": 0, "items": []}
@@ -70,9 +72,13 @@ def list_genres(db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/songs/{song_id}", response_model=SongOut, summary="单曲详情")
-def get_song_detail(song_id: str, db: Session = Depends(get_db)) -> dict:
+def get_song_detail(
+    song_id: str,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
     song = get_song(db, song_id)
-    return song_out(song, favorite_ids(db))
+    return song_out(song, favorite_ids(db, user_id_of(user)))
 
 
 @router.get("/songs/{song_id}/lyrics", response_model=LyricsOut, summary="歌词（时间轴）")

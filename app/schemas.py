@@ -142,7 +142,23 @@ class HotItem(CamelModel):
 class HotOut(CamelModel):
     title: str
     refresh: str
+    placeholder: str
+    cancel: str
     items: list[HotItem]
+
+
+class RecommendItem(CamelModel):
+    id: str
+    title: str
+    sub: str = ""
+    cover: str
+    # 卡片尺寸：lg 为大卡（320×150 那一排），sm 为小卡
+    size: str = "sm"
+
+
+class RecommendOut(CamelModel):
+    title: str
+    items: list[RecommendItem]
 
 
 class ArtistOut(CamelModel):
@@ -219,14 +235,44 @@ class DownloadCreate(CamelModel):
     size: str | None = None
 
 
-# ---------------------------------------------------------------- 我的
+# ---------------------------------------------------------------- 账号
 class UserOut(CamelModel):
-    name: str
+    # id 是展示用编号（对应设计稿 “ID: 8823 6102”），真正的用户主键不出现在响应里
     id: str
+    email: str
+    name: str
     member: str
     avatar: str
 
 
+class TokenOut(CamelModel):
+    token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserOut
+
+
+class RegisterIn(CamelModel):
+    email: str
+    password: str
+    name: str | None = None
+
+
+class LoginIn(CamelModel):
+    email: str
+    password: str
+
+
+class AccountPatch(CamelModel):
+    name: str | None = None
+    avatar: str | None = None
+
+
+class OkOut(CamelModel):
+    ok: bool
+
+
+# ---------------------------------------------------------------- 我的
 class StatOut(CamelModel):
     value: str
     label: str
@@ -341,3 +387,4 @@ class HealthOut(CamelModel):
     version: str
     songs: int
     playlists: int
+    users: int = 0

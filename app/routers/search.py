@@ -7,8 +7,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Playlist, Song
-from ..schemas import HotOut, SearchOut, SuggestOut
+from ..deps import get_optional_user, user_id_of
+from ..models import Playlist, Song, User
+from ..schemas import HotOut, RecommendOut, SearchOut, SuggestOut
 from ..services import (
     favorite_ids,
     get_content,
@@ -54,11 +55,13 @@ def _hot_items(db: Session, offset: int) -> list[dict]:
 def search(
     q: str = Query(..., min_length=1, description="关键字，匹配歌名 / 歌手 / 专辑 / 流派 / 歌单标题"),
     limit: int = Query(20, ge=1, le=100),
+    user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ) -> dict:
     keyword = q.strip()
     like = f"%{keyword}%"
-    liked = favorite_ids(db)
+    uid = user_id_of(user)
+    liked = favorite_ids(db, uid)
 
     song_rows = db.scalars(
         select(Song)
@@ -74,12 +77,11 @@ def search(
         .limit(limit)
     ).all()
 
-    playlist_rows = db.scalars(
-        select(Playlist)
-        .where(or_(Playlist.title.like(like), Playlist.desc.like(like), Playlist.badge.like(like)))
-        .order_by(Playlist.position)
-        .limit(limit)
-    ).all()
+    playlist_stmt = select(Playlist).where(
+        or_(Playlist.title.like(like), Playlist.desc.like(like), Playlist.badge.like(like)),
+        or_(Playlist.owner_id == uid, Playlist.owner_id.is_(None)),
+    )
+    playlist_rows = db.scalars(playlist_stmt.order_by(Playlist.position).limit(limit)).all()
 
     artist_rows = db.execute(
         select(Song.artist, func.count(), func.min(Song.cover))
@@ -104,31 +106,70 @@ def search(
     }
 
 
-@router.get("/search/hot", response_model=HotOut, summary="热门搜索词")
-def hot(db: Session = Depends(get_db)) -> dict:
+def _hot_payload(db: Session, offset: int) -> dict:
     content = get_content(db, "search")
     copy = content.get("hot", {})
-    offset = int(get_setting(db, "hot_offset", 0) or 0)
     return {
         "title": copy.get("title", "热门搜索"),
         "refresh": copy.get("refresh", "换一换"),
+        "placeholder": content.get("placeholder", "搜索你喜欢的音乐"),
+        "cancel": content.get("cancel", "取消"),
         "items": _hot_items(db, offset),
     }
+
+
+@router.get("/search/recommend", response_model=RecommendOut, summary="猜你喜欢卡片")
+def recommend(db: Session = Depends(get_db)) -> dict:
+    content = get_content(db, "search")
+    copy = content.get("recommend", {})
+    entries = copy.get("items", [])
+    ids = [item.get("id", "") for item in entries if item.get("id")]
+    songs = (
+        {song.id: song for song in db.scalars(select(Song).where(Song.id.in_(ids))).all()}
+        if ids
+        else {}
+    )
+
+    items = []
+    for index, item in enumerate(entries):
+        song_id = item.get("id", "")
+        song = songs.get(song_id)
+        # 子标题沿用文案：设计稿里只有大卡有副标题，小卡留空（前端按空值隐藏）
+        sub = item.get("sub", "")
+        items.append(
+            {
+                "id": song_id,
+                "title": song.title if song else item.get("title", ""),
+                "sub": sub,
+                "cover": song.cover if song else item.get("cover", ""),
+                "size": item.get("size") or ("lg" if index < 2 else "sm"),
+            }
+        )
+    return {"title": copy.get("title", "猜你喜欢"), "items": items}
+
+
+@router.get("/search/hot", response_model=HotOut, summary="热门搜索词")
+def hot(
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    uid = user_id_of(user)
+    offset = int(get_setting(db, uid, "hot_offset", 0) or 0) if uid else 0
+    return _hot_payload(db, offset)
 
 
 @router.post("/search/hot/refresh", response_model=HotOut, summary="换一换")
-def refresh_hot(db: Session = Depends(get_db)) -> dict:
-    content = get_content(db, "search")
-    copy = content.get("hot", {})
+def refresh_hot(
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    uid = user_id_of(user)
     pool_size = max(len(_hot_pool(db)), 1)
-    offset = int(get_setting(db, "hot_offset", 0) or 0)
+    offset = int(get_setting(db, uid, "hot_offset", 0) or 0) if uid else 0
     offset = (offset + HOT_SIZE) % pool_size
-    set_setting(db, "hot_offset", offset)
-    return {
-        "title": copy.get("title", "热门搜索"),
-        "refresh": copy.get("refresh", "换一换"),
-        "items": _hot_items(db, offset),
-    }
+    if uid:
+        set_setting(db, uid, "hot_offset", offset)
+    return _hot_payload(db, offset)
 
 
 @router.get("/search/suggest", response_model=SuggestOut, summary="输入联想")
@@ -142,9 +183,7 @@ def suggest(
         return {"query": "", "items": []}
 
     like = f"%{keyword}%"
-    titles = list(
-        db.scalars(select(Song.title).where(Song.title.like(like)).limit(limit)).all()
-    )
+    titles = list(db.scalars(select(Song.title).where(Song.title.like(like)).limit(limit)).all())
     artists = list(
         db.scalars(select(Song.artist).distinct().where(Song.artist.like(like)).limit(limit)).all()
     )

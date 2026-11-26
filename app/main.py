@@ -17,8 +17,19 @@ from sqlalchemy import func, select
 from . import config
 from .db import Base, SessionLocal, engine
 from .errors import ApiError
-from .models import Playlist, Song
-from .routers import browse, downloads, favorites, me, player, playlists, recent, search, songs
+from .models import Playlist, Song, User
+from .routers import (
+    auth,
+    browse,
+    downloads,
+    favorites,
+    me,
+    player,
+    playlists,
+    recent,
+    search,
+    songs,
+)
 from .schemas import HealthOut
 from .seed import ensure_seed
 
@@ -33,7 +44,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=config.APP_NAME,
     version=config.VERSION,
-    description="韵律音乐 App 后端接口，响应字段与前端 data/*.json 保持一致。",
+    description=(
+        "韵律音乐 App 后端接口，响应字段与前端 data/*.json 保持一致。\n\n"
+        "鉴权：先调用 `POST /auth/register` 或 `POST /auth/login` 拿 token，"
+        "再点右上角 Authorize 填入即可调试需要登录的接口。"
+    ),
     lifespan=lifespan,
 )
 
@@ -54,7 +69,18 @@ async def handle_api_error(request: Request, exc: ApiError) -> JSONResponse:
     )
 
 
-for module in (songs, playlists, browse, search, player, favorites, recent, downloads, me):
+for module in (
+    auth,
+    songs,
+    playlists,
+    browse,
+    search,
+    player,
+    favorites,
+    recent,
+    downloads,
+    me,
+):
     app.include_router(module.router, prefix=config.API_PREFIX)
 
 
@@ -70,6 +96,7 @@ def health() -> dict:
             "version": config.VERSION,
             "songs": db.scalar(select(func.count()).select_from(Song)) or 0,
             "playlists": db.scalar(select(func.count()).select_from(Playlist)) or 0,
+            "users": db.scalar(select(func.count()).select_from(User)) or 0,
         }
 
 

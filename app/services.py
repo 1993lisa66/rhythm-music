@@ -1,4 +1,8 @@
-"""业务服务层：序列化、播放器状态机、设置读写。路由层只负责 HTTP 语义。"""
+"""业务服务层：序列化、播放器状态机、设置读写。
+
+所有涉及用户状态（收藏 / 播放记录 / 下载 / 队列 / 播放态 / 设置）的函数都要求显式传入
+user_id，路由层通过鉴权依赖拿到当前用户后透传，避免出现跨用户读写。
+"""
 
 from __future__ import annotations
 
@@ -6,7 +10,7 @@ import json
 import random
 from datetime import datetime
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from . import config
@@ -49,11 +53,14 @@ def get_song(db: Session, song_id: str) -> Song:
     return song
 
 
-def get_playlist(db: Session, playlist_id: str) -> Playlist:
+def get_user_playlist(db: Session, user_id: str, playlist_id: str) -> Playlist:
     stmt = (
         select(Playlist)
         .options(selectinload(Playlist.tracks).selectinload(PlaylistTrack.song))
-        .where(Playlist.id == playlist_id)
+        .where(
+            Playlist.id == playlist_id,
+            or_(Playlist.owner_id == user_id, Playlist.owner_id.is_(None)),
+        )
     )
     playlist = db.scalars(stmt).first()
     if playlist is None:
@@ -62,8 +69,12 @@ def get_playlist(db: Session, playlist_id: str) -> Playlist:
 
 
 # ---------------------------------------------------------------- 序列化
-def favorite_ids(db: Session) -> set[str]:
-    return set(db.scalars(select(Favorite.song_id)).all())
+def favorite_ids(db: Session, user_id: str | None) -> set[str]:
+    if not user_id:
+        return set()
+    return set(
+        db.scalars(select(Favorite.song_id).where(Favorite.user_id == user_id)).all()
+    )
 
 
 def song_out(song: Song, liked: set[str] | None = None) -> dict:
@@ -122,9 +133,9 @@ def get_content(db: Session, key: str) -> dict:
         return {}
 
 
-# ---------------------------------------------------------------- 设置
-def _read_setting(db: Session, key: str) -> object:
-    row = db.get(Setting, key)
+# ---------------------------------------------------------------- 设置（按用户）
+def _read_setting(db: Session, user_id: str, key: str) -> object:
+    row = db.get(Setting, (user_id, key))
     if row is None:
         return DEFAULT_SETTINGS.get(key)
     try:
@@ -133,67 +144,79 @@ def _read_setting(db: Session, key: str) -> object:
         return DEFAULT_SETTINGS.get(key)
 
 
-def _write_setting(db: Session, key: str, value: object) -> None:
-    row = db.get(Setting, key)
+def _write_setting(db: Session, user_id: str, key: str, value: object) -> None:
+    row = db.get(Setting, (user_id, key))
     payload = json.dumps(value, ensure_ascii=False)
     if row is None:
-        db.add(Setting(key=key, value=payload))
+        db.add(Setting(user_id=user_id, key=key, value=payload))
     else:
         row.value = payload
 
 
-def settings_payload(db: Session) -> dict:
+def settings_payload(db: Session, user_id: str) -> dict:
     return {
-        "quality": _read_setting(db, "quality") or "高品质",
+        "quality": _read_setting(db, user_id, "quality") or "高品质",
         "qualities": list(config.QUALITIES),
-        "wifi_only": bool(_read_setting(db, "wifi_only")),
-        "show_lyrics": bool(_read_setting(db, "show_lyrics")),
+        "wifi_only": bool(_read_setting(db, user_id, "wifi_only")),
+        "show_lyrics": bool(_read_setting(db, user_id, "show_lyrics")),
     }
 
 
-def update_settings(db: Session, **patch: object) -> dict:
+def update_settings(db: Session, user_id: str, **patch: object) -> dict:
     for key, value in patch.items():
         if value is not None:
-            _write_setting(db, key, value)
+            _write_setting(db, user_id, key, value)
     db.commit()
-    return settings_payload(db)
+    return settings_payload(db, user_id)
 
 
-# ---------------------------------------------------------------- 播放队列
-def queue_rows(db: Session) -> list[QueueItem]:
-    return list(db.scalars(select(QueueItem).order_by(QueueItem.position)).all())
+# ---------------------------------------------------------------- 播放队列（按用户）
+def queue_rows(db: Session, user_id: str) -> list[QueueItem]:
+    return list(
+        db.scalars(
+            select(QueueItem)
+            .where(QueueItem.user_id == user_id)
+            .order_by(QueueItem.position)
+        ).all()
+    )
 
 
-def queue_ids(db: Session) -> list[str]:
-    return [row.song_id for row in queue_rows(db)]
+def queue_ids(db: Session, user_id: str) -> list[str]:
+    return [row.song_id for row in queue_rows(db, user_id)]
 
 
-def queue_songs(db: Session) -> list[Song]:
-    ids = queue_ids(db)
+def queue_songs(db: Session, user_id: str) -> list[Song]:
+    ids = queue_ids(db, user_id)
     if not ids:
         return []
     found = {song.id: song for song in db.scalars(select(Song).where(Song.id.in_(ids))).all()}
     return [found[i] for i in ids if i in found]
 
 
-def set_queue(db: Session, song_ids: list[str], start_index: int = 0, autoplay: bool = True) -> None:
-    db.execute(delete(QueueItem))
+def set_queue(
+    db: Session,
+    user_id: str,
+    song_ids: list[str],
+    start_index: int = 0,
+    autoplay: bool = True,
+) -> None:
+    db.execute(delete(QueueItem).where(QueueItem.user_id == user_id))
     for position, song_id in enumerate(song_ids):
-        db.add(QueueItem(position=position, song_id=song_id))
+        db.add(QueueItem(user_id=user_id, position=position, song_id=song_id))
 
-    state = get_player(db)
+    state = get_player(db, user_id)
     state.index = max(0, min(start_index, max(len(song_ids) - 1, 0)))
     state.position = 0
     state.playing = autoplay and bool(song_ids)
     db.commit()
 
 
-# ---------------------------------------------------------------- 播放态
-def get_player(db: Session) -> PlayerState:
-    state = db.get(PlayerState, 1)
+# ---------------------------------------------------------------- 播放态（按用户）
+def get_player(db: Session, user_id: str) -> PlayerState:
+    state = db.get(PlayerState, user_id)
     if state is None:
         state = PlayerState(
-            id=1,
+            user_id=user_id,
             index=0,
             position=config.DEFAULT_POSITION,
             playing=False,
@@ -205,10 +228,10 @@ def get_player(db: Session) -> PlayerState:
     return state
 
 
-def player_payload(db: Session) -> dict:
-    state = get_player(db)
-    songs = queue_songs(db)
-    liked = favorite_ids(db)
+def player_payload(db: Session, user_id: str) -> dict:
+    state = get_player(db, user_id)
+    songs = queue_songs(db, user_id)
+    liked = favorite_ids(db, user_id)
 
     if not songs:
         return {
@@ -247,36 +270,36 @@ def player_payload(db: Session) -> dict:
     }
 
 
-def current_duration(db: Session) -> int:
-    songs = queue_songs(db)
+def current_duration(db: Session, user_id: str) -> int:
+    songs = queue_songs(db, user_id)
     if not songs:
         return 0
-    state = get_player(db)
+    state = get_player(db, user_id)
     index = int(clamp(state.index, 0, len(songs) - 1))
     return max(songs[index].duration, 1)
 
 
-def advance_next(db: Session, auto: bool = False) -> dict:
-    state = get_player(db)
-    ids = queue_ids(db)
+def advance_next(db: Session, user_id: str, auto: bool = False) -> dict:
+    state = get_player(db, user_id)
+    ids = queue_ids(db, user_id)
     if not ids:
         db.commit()
-        return player_payload(db)
+        return player_payload(db, user_id)
 
     if state.repeat_mode == "one" and auto:
         state.position = 0
         db.commit()
-        return player_payload(db)
+        return player_payload(db, user_id)
 
     if state.shuffle and len(ids) > 1:
         choices = [i for i in range(len(ids)) if i != state.index]
         state.index = random.choice(choices)
     elif state.index >= len(ids) - 1:
         if auto and state.repeat_mode == "off":
-            state.position = current_duration(db)
+            state.position = current_duration(db, user_id)
             state.playing = False
             db.commit()
-            return player_payload(db)
+            return player_payload(db, user_id)
         state.index = 0
     else:
         state.index += 1
@@ -284,44 +307,69 @@ def advance_next(db: Session, auto: bool = False) -> dict:
     state.position = 0
     state.playing = True
     db.commit()
-    return player_payload(db)
+    return player_payload(db, user_id)
 
 
-def advance_prev(db: Session) -> dict:
-    state = get_player(db)
-    ids = queue_ids(db)
+def advance_prev(db: Session, user_id: str) -> dict:
+    state = get_player(db, user_id)
+    ids = queue_ids(db, user_id)
     if not ids:
         db.commit()
-        return player_payload(db)
+        return player_payload(db, user_id)
 
     if state.position > 3:
         state.position = 0
         db.commit()
-        return player_payload(db)
+        return player_payload(db, user_id)
 
     state.index = len(ids) - 1 if state.index <= 0 else state.index - 1
     state.position = 0
     state.playing = True
     db.commit()
-    return player_payload(db)
+    return player_payload(db, user_id)
 
 
-def seek_to(db: Session, position: int | None = None, ratio: float | None = None) -> dict:
-    state = get_player(db)
-    duration = current_duration(db)
+def seek_to(
+    db: Session,
+    user_id: str,
+    position: int | None = None,
+    ratio: float | None = None,
+) -> dict:
+    state = get_player(db, user_id)
+    duration = current_duration(db, user_id)
     if duration <= 0:
         db.commit()
-        return player_payload(db)
+        return player_payload(db, user_id)
 
     if ratio is not None:
         state.position = int(round(clamp(ratio, 0.0, 1.0) * duration))
     elif position is not None:
         state.position = int(clamp(position, 0, duration))
     db.commit()
-    return player_payload(db)
+    return player_payload(db, user_id)
 
 
-# ---------------------------------------------------------------- 统计
+def rewrite_queue(
+    db: Session,
+    user_id: str,
+    song_ids: list[str],
+    index: int,
+    position: int,
+    playing: bool,
+) -> None:
+    """整体重写队列并保留播放进度（用于删曲 / 清空 / 追加）。"""
+    db.execute(delete(QueueItem).where(QueueItem.user_id == user_id))
+    for order, song_id in enumerate(song_ids):
+        db.add(QueueItem(user_id=user_id, position=order, song_id=song_id))
+
+    state = get_player(db, user_id)
+    state.index = max(0, min(index, max(len(song_ids) - 1, 0)))
+    state.position = max(0, position)
+    state.playing = playing and bool(song_ids)
+    db.commit()
+
+
+# ---------------------------------------------------------------- 统计（按用户）
 def download_bytes(size_text: str) -> float:
     try:
         return float(str(size_text).split()[0])
@@ -329,25 +377,36 @@ def download_bytes(size_text: str) -> float:
         return 0.0
 
 
-def computed_stats(db: Session) -> dict:
+def computed_stats(db: Session, user_id: str) -> dict:
     today = now_local().replace(hour=0, minute=0, second=0)
     return {
-        "favorites": db.scalar(select(func.count()).select_from(Favorite)) or 0,
-        "playlists": db.scalar(select(func.count()).select_from(Playlist)) or 0,
+        "favorites": db.scalar(
+            select(func.count()).select_from(Favorite).where(Favorite.user_id == user_id)
+        )
+        or 0,
+        "playlists": db.scalar(
+            select(func.count()).select_from(Playlist).where(Playlist.owner_id == user_id)
+        )
+        or 0,
         "songs": db.scalar(select(func.count()).select_from(Song)) or 0,
-        "downloads": db.scalar(select(func.count()).select_from(Download)) or 0,
+        "downloads": db.scalar(
+            select(func.count()).select_from(Download).where(Download.user_id == user_id)
+        )
+        or 0,
         "today_plays": db.scalar(
-            select(func.count()).select_from(PlayEvent).where(PlayEvent.played_at >= today)
+            select(func.count())
+            .select_from(PlayEvent)
+            .where(PlayEvent.user_id == user_id, PlayEvent.played_at >= today)
         )
         or 0,
         "following": None,
     }
 
 
-def record_play(db: Session, song_id: str) -> datetime:
+def record_play(db: Session, user_id: str, song_id: str) -> datetime:
     get_song(db, song_id)
     played_at = now_local()
-    db.add(PlayEvent(song_id=song_id, played_at=played_at))
+    db.add(PlayEvent(user_id=user_id, song_id=song_id, played_at=played_at))
     db.commit()
     return played_at
 
@@ -358,16 +417,18 @@ def recent_bucket(played_at: datetime, now: datetime) -> str:
         return "今天"
     if delta == 1:
         return "昨天"
-    if delta <= 7:
-        return "更早"
-    return "更早之前"
+    return "更早"
 
 
-def recent_groups(db: Session, per_group: int = 20) -> list[dict]:
+def recent_groups(db: Session, user_id: str, per_group: int = 20) -> list[dict]:
     """按 今天 / 昨天 / 更早 分组；同一首歌只保留最近一次，避免重复出现。"""
     now = now_local()
-    events = db.scalars(select(PlayEvent).order_by(PlayEvent.played_at.desc())).all()
-    liked = favorite_ids(db)
+    events = db.scalars(
+        select(PlayEvent)
+        .where(PlayEvent.user_id == user_id)
+        .order_by(PlayEvent.played_at.desc())
+    ).all()
+    liked = favorite_ids(db, user_id)
     seen: set[str] = set()
     buckets: dict[str, list[dict]] = {}
 
@@ -385,41 +446,24 @@ def recent_groups(db: Session, per_group: int = 20) -> list[dict]:
         if len(buckets[label]) < per_group:
             buckets[label].append(row)
 
-    order = ["今天", "昨天", "更早", "更早之前"]
-    groups = [
+    order = ["今天", "昨天", "更早"]
+    return [
         {"label": label, "count": len(buckets[label]), "items": buckets[label]}
         for label in order
         if label in buckets
     ]
-    return groups
 
 
-# ---------------------------------------------------------------- 设置通用读写
-def get_setting(db: Session, key: str, default: object = None) -> object:
-    value = _read_setting(db, key)
+# ---------------------------------------------------------------- 设置通用读写（按用户）
+def get_setting(db: Session, user_id: str | None, key: str, default: object = None) -> object:
+    if not user_id:
+        return default
+    value = _read_setting(db, user_id, key)
     return default if value is None else value
 
 
-def set_setting(db: Session, key: str, value: object) -> None:
-    _write_setting(db, key, value)
-    db.commit()
-
-
-# ---------------------------------------------------------------- 队列重写
-def rewrite_queue(
-    db: Session,
-    song_ids: list[str],
-    index: int,
-    position: int,
-    playing: bool,
-) -> None:
-    """整体重写队列并保留播放进度（用于删曲 / 清空）。"""
-    db.execute(delete(QueueItem))
-    for order, song_id in enumerate(song_ids):
-        db.add(QueueItem(position=order, song_id=song_id))
-
-    state = get_player(db)
-    state.index = max(0, min(index, max(len(song_ids) - 1, 0)))
-    state.position = max(0, position)
-    state.playing = playing and bool(song_ids)
+def set_setting(db: Session, user_id: str | None, key: str, value: object) -> None:
+    if not user_id:
+        return
+    _write_setting(db, user_id, key, value)
     db.commit()

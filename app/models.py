@@ -1,7 +1,11 @@
 """ORM 模型。
 
-设计原则：歌曲 / 歌单属"内容"，收藏 / 最近播放 / 下载 / 队列 / 播放态属"用户状态"，
-两者分表，方便将来接多用户时只给状态表加 user_id。
+分两层：
+- 内容层：Song / LyricLine / Playlist(+tracks) —— 全用户共享的曲库与歌单模板；
+- 用户层：User 以及所有带 user_id 的状态表（收藏 / 播放记录 / 下载 / 队列 / 播放态 / 设置）。
+
+歌单也带 owner_id：注册时会为每个用户克隆一份初始歌单，保证「我的歌单」互相独立；
+owner_id 为空表示系统内容（当前未使用，留给后续的编辑精选）。
 """
 
 from __future__ import annotations
@@ -15,8 +19,27 @@ from .db import Base
 
 
 def now_local() -> datetime:
-    """统一用服务器本地时间（个人单用户场景，够用且便于按天分组）。"""
+    """统一用服务器本地时间（便于按天分组「今天 / 昨天」）。"""
     return datetime.now().replace(microsecond=0)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    # 展示用编号，对应设计稿的 “ID: 8823 6102”
+    number: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(190), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(60), default="")
+    password_hash: Mapped[str] = mapped_column(String(200))
+    member: Mapped[str] = mapped_column(String(40), default="音乐会员")
+    avatar: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
+
+    @property
+    def public_id(self) -> str:
+        raw = f"{self.number:08d}"
+        return f"ID: {raw[:4]} {raw[4:]}"
 
 
 class Song(Base):
@@ -36,6 +59,9 @@ class Playlist(Base):
     __tablename__ = "playlists"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String(200))
     badge: Mapped[str] = mapped_column(String(64), default="")
     featured_badge: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -61,7 +87,9 @@ class PlaylistTrack(Base):
     __table_args__ = (UniqueConstraint("playlist_id", "position", name="uq_playlist_track_pos"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    playlist_id: Mapped[str] = mapped_column(ForeignKey("playlists.id", ondelete="CASCADE"), index=True)
+    playlist_id: Mapped[str] = mapped_column(
+        ForeignKey("playlists.id", ondelete="CASCADE"), index=True
+    )
     song_id: Mapped[str] = mapped_column(ForeignKey("songs.id"), index=True)
     position: Mapped[int] = mapped_column(Integer, default=0)
     # 部分曲目在歌单里展示的时长与曲库不同（设计稿数据如此），为空则取曲库时长
@@ -83,6 +111,9 @@ class LyricLine(Base):
 class Favorite(Base):
     __tablename__ = "favorites"
 
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     song_id: Mapped[str] = mapped_column(ForeignKey("songs.id"), primary_key=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
@@ -91,6 +122,9 @@ class PlayEvent(Base):
     __tablename__ = "play_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
     song_id: Mapped[str] = mapped_column(ForeignKey("songs.id"), index=True)
     played_at: Mapped[datetime] = mapped_column(DateTime, default=now_local, index=True)
 
@@ -98,6 +132,9 @@ class PlayEvent(Base):
 class Download(Base):
     __tablename__ = "downloads"
 
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     song_id: Mapped[str] = mapped_column(ForeignKey("songs.id"), primary_key=True)
     size: Mapped[str] = mapped_column(String(16), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
@@ -106,16 +143,21 @@ class Download(Base):
 class QueueItem(Base):
     __tablename__ = "queue_items"
 
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     position: Mapped[int] = mapped_column(Integer, primary_key=True)
     song_id: Mapped[str] = mapped_column(ForeignKey("songs.id"), index=True)
 
 
 class PlayerState(Base):
-    """单例行（id 恒为 1）。"""
+    """每个用户一行，user_id 即主键。"""
 
     __tablename__ = "player_state"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     index: Mapped[int] = mapped_column(Integer, default=0)
     position: Mapped[int] = mapped_column(Integer, default=0)
     playing: Mapped[bool] = mapped_column(default=False)
@@ -126,6 +168,9 @@ class PlayerState(Base):
 class Setting(Base):
     __tablename__ = "settings"
 
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(Text, default="null")
 

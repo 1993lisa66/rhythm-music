@@ -21,3 +21,11 @@ def bad_request(message: str, code: str = "bad_request") -> ApiError:
 
 def conflict(message: str, code: str = "conflict") -> ApiError:
     return ApiError(409, code, message)
+
+
+def unauthorized(message: str, code: str = "unauthorized") -> ApiError:
+    return ApiError(401, code, message)
+
+
+def forbidden(message: str, code: str = "forbidden") -> ApiError:
+    return ApiError(403, code, message)

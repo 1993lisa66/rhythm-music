@@ -1,4 +1,4 @@
-"""聚合页：发现首页、音乐库（含专辑视图）。"""
+"""聚合页：发现首页、音乐库（含专辑视图）。歌单取自当前用户自己的克隆。"""
 
 from __future__ import annotations
 
@@ -7,16 +7,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Playlist, Song
+from ..deps import get_optional_user, user_id_of
+from ..models import Playlist, Song, User
 from ..schemas import AlbumListOut, DiscoverOut, LibraryOut
-from ..services import (
-    favorite_ids,
-    get_content,
-    playlist_summary,
-    song_out,
-)
+from ..services import favorite_ids, get_content, playlist_summary, recent_groups, song_out
 
 router = APIRouter(tags=["browse"])
+
+DISCOVER_RECENT_LIMIT = 2
 
 
 def _songs_by_ids(db: Session, ids: list[str], liked: set[str]) -> list[dict]:
@@ -26,31 +24,51 @@ def _songs_by_ids(db: Session, ids: list[str], liked: set[str]) -> list[dict]:
     return [song_out(found[i], liked) for i in ids if i in found]
 
 
-def _playlist_map(db: Session, ids: list[str]) -> dict[str, Playlist]:
-    if not ids:
-        return {}
-    rows = db.scalars(select(Playlist).where(Playlist.id.in_(ids))).all()
-    return {row.id: row for row in rows}
+def _owned_playlists(db: Session, user_id: str | None) -> list[Playlist]:
+    if not user_id:
+        return []
+    return list(
+        db.scalars(
+            select(Playlist)
+            .where(Playlist.owner_id == user_id)
+            .order_by(Playlist.position)
+        ).all()
+    )
 
 
 @router.get("/discover", response_model=DiscoverOut, summary="发现首页聚合")
-def get_discover(db: Session = Depends(get_db)) -> dict:
+def get_discover(
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
     content = get_content(db, "discover")
-    liked = favorite_ids(db)
+    liked = favorite_ids(db, user_id_of(user))
 
     featured_copy = content.get("featured", {})
+    owned = _owned_playlists(db, user_id_of(user))
     featured_playlist = None
-    playlist_id = featured_copy.get("playlistId")
-    if playlist_id:
-        playlist = db.get(Playlist, playlist_id)
-        if playlist is not None:
-            featured_playlist = playlist_summary(playlist)
+    if owned:
+        template_id = featured_copy.get("playlistId")
+        match = next((p for p in owned if p.id.endswith(f"-{template_id}")), None)
+        featured_playlist = playlist_summary(match or owned[0])
 
     recent_copy = content.get("recent", {})
     moods_copy = content.get("moods", {})
 
+    # 问候语按时段固定，名字换成当前用户（未登录时保留文案原样）
+    greeting = content.get("greeting", "")
+    if user is not None and greeting:
+        greeting = f"{greeting.split('，')[0]}，{user.name}"
+
+    # 发现页的「最近播放」取当前用户自己的播放记录；匿名时才回落到文案里的示例曲目
+    if user is not None:
+        flat = [item for group in recent_groups(db, user.id, per_group=6) for item in group["items"]]
+        recent_items = flat[:DISCOVER_RECENT_LIMIT]
+    else:
+        recent_items = _songs_by_ids(db, content.get("recent", {}).get("songIds", []), liked)
+
     return {
-        "greeting": content.get("greeting", ""),
+        "greeting": greeting,
         "headline": content.get("headline", ""),
         "search_placeholder": content.get("searchPlaceholder", ""),
         "featured": {
@@ -65,20 +83,32 @@ def get_discover(db: Session = Depends(get_db)) -> dict:
         "recent": {
             "title": recent_copy.get("title", "最近播放"),
             "more": recent_copy.get("more", "全部 ›"),
-            "items": _songs_by_ids(db, recent_copy.get("songIds", []), liked),
+            "items": recent_items,
         },
     }
 
 
 @router.get("/library", response_model=LibraryOut, summary="音乐库聚合")
-def get_library(db: Session = Depends(get_db)) -> dict:
+def get_library(
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
     content = get_content(db, "library")
-    liked = favorite_ids(db)
+    liked = favorite_ids(db, user_id_of(user))
 
     recent_copy = content.get("recent", {})
     playlists_copy = content.get("playlists", {})
-    playlist_ids = playlists_copy.get("ids", [])
-    playlists = _playlist_map(db, playlist_ids)
+    wanted = playlists_copy.get("ids", [])
+    owned = _owned_playlists(db, user_id_of(user))
+    # 优先按文案里的顺序取（private / commute），不足时用其余歌单补齐
+    picked: list[Playlist] = []
+    for template_id in wanted:
+        match = next((p for p in owned if p.id.endswith(f"-{template_id}")), None)
+        if match is not None:
+            picked.append(match)
+    for playlist in owned:
+        if playlist not in picked and len(picked) < max(len(wanted), 2):
+            picked.append(playlist)
 
     return {
         "title": content.get("title", "音乐库"),
@@ -91,7 +121,7 @@ def get_library(db: Session = Depends(get_db)) -> dict:
         },
         "playlists": {
             "title": playlists_copy.get("title", "我的歌单"),
-            "items": [playlist_summary(playlists[i]) for i in playlist_ids if i in playlists],
+            "items": [playlist_summary(p) for p in picked],
         },
     }
 
