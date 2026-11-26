@@ -20,7 +20,6 @@ from . import config
 from .errors import not_found
 from .models import (
     ContentBlock,
-    Download,
     Favorite,
     PlayEvent,
     PlayerState,
@@ -34,7 +33,6 @@ from .models import (
 
 DEFAULT_SETTINGS: dict[str, object] = {
     "quality": "高品质",
-    "wifi_only": True,
     "show_lyrics": True,
 }
 
@@ -189,7 +187,6 @@ def settings_payload(db: Session, user_id: str) -> dict:
     return {
         "quality": _read_setting(db, user_id, "quality") or "高品质",
         "qualities": list(config.QUALITIES),
-        "wifi_only": bool(_read_setting(db, user_id, "wifi_only")),
         "show_lyrics": bool(_read_setting(db, user_id, "show_lyrics")),
     }
 
@@ -402,13 +399,6 @@ def rewrite_queue(
 
 
 # ---------------------------------------------------------------- 统计（按用户）
-def download_bytes(size_text: str) -> float:
-    try:
-        return float(str(size_text).split()[0])
-    except (ValueError, IndexError):
-        return 0.0
-
-
 def computed_stats(db: Session, user_id: str) -> dict:
     today = now_local().replace(hour=0, minute=0, second=0)
     return {
@@ -421,10 +411,6 @@ def computed_stats(db: Session, user_id: str) -> dict:
         )
         or 0,
         "songs": db.scalar(select(func.count()).select_from(Song)) or 0,
-        "downloads": db.scalar(
-            select(func.count()).select_from(Download).where(Download.user_id == user_id)
-        )
-        or 0,
         "today_plays": db.scalar(
             select(func.count())
             .select_from(PlayEvent)

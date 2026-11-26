@@ -15,11 +15,10 @@ from .auth import user_out
 
 router = APIRouter(tags=["me"])
 
-# 菜单项 → 前端路由（收藏 / 最近播放 / 下载 / 歌单都是独立页面）
+# 菜单项 → 前端路由（收藏 / 最近播放 / 歌单都是独立页面）
 MENU_ROUTES = {
     "我的收藏": "/favorites",
     "最近播放": "/recent",
-    "离线下载": "/downloads",
     "我的歌单": "/mylists",
 }
 
@@ -27,14 +26,12 @@ MENU_ROUTES = {
 MENU_COUNTS = {
     "我的收藏": "favorites",
     "最近播放": "today_plays",
-    "离线下载": "downloads",
     "我的歌单": "playlists",
 }
 
 MENU_VALUES = {
     "我的收藏": lambda n: f"{n} 首",
     "最近播放": lambda n: f"今天 {n} 首",
-    "离线下载": lambda n: f"{n} 首",
     "我的歌单": lambda n: f"{n} 个",
 }
 
@@ -61,6 +58,9 @@ def get_profile(user: User = Depends(get_current_user), db: Session = Depends(ge
     items = []
     for item in menu_copy.get("items", []):
         name = item.get("name", "")
+        # 只渲染代码里有对应页面的菜单项：历史文案里已下线的入口（如离线下载）不再透出
+        if name not in MENU_ROUTES:
+            continue
         key = MENU_COUNTS.get(name, "songs")
         count = computed.get(key) or 0
         items.append(

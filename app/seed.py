@@ -26,7 +26,6 @@ from . import config
 from .db import Base, SessionLocal, engine, ensure_columns
 from .models import (
     ContentBlock,
-    Download,
     Favorite,
     LyricLine,
     PlayEvent,
@@ -172,12 +171,9 @@ def provision_user(db: Session, user: User, with_demo_data: bool = False) -> Non
             )
 
     if with_demo_data:
-        for item in _load("songs") or []:
+        for item in (_load("songs") or []):
             if item.get("liked"):
                 db.add(Favorite(user_id=user.id, song_id=item["id"]))
-
-        for item in (_load("downloads") or {}).get("tracks", []):
-            db.add(Download(user_id=user.id, song_id=item["id"], size=item.get("size", "")))
 
         recent = _load("recent") or {}
         for group in recent.get("groups", []):

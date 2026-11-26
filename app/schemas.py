@@ -244,22 +244,6 @@ class FavoriteListOut(CamelModel):
 
 
 # ---------------------------------------------------------------- 下载
-class DownloadItem(SongOut):
-    size: str
-    downloaded_at: datetime | None = None
-
-
-class DownloadListOut(CamelModel):
-    total: int
-    total_size: str
-    items: list[DownloadItem]
-
-
-class DownloadCreate(CamelModel):
-    song_id: str
-    size: str | None = None
-
-
 # ---------------------------------------------------------------- 账号
 class UserOut(CamelModel):
     # id 是展示用编号（对应设计稿 “ID: 8823 6102”），真正的用户主键不出现在响应里
@@ -320,7 +304,6 @@ class ComputedOut(CamelModel):
     favorites: int
     playlists: int
     songs: int
-    downloads: int
     today_plays: int
     # 关注数没有数据源，暂为 None
     following: int | None = None
@@ -337,13 +320,11 @@ class ProfileOut(CamelModel):
 class SettingsOut(CamelModel):
     quality: str
     qualities: list[str]
-    wifi_only: bool
     show_lyrics: bool
 
 
 class SettingsPatch(CamelModel):
     quality: Literal["标准", "高品质", "无损"] | None = None
-    wifi_only: bool | None = None
     show_lyrics: bool | None = None
 
 

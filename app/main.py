@@ -22,7 +22,6 @@ from .routers import (
     assets,
     auth,
     browse,
-    downloads,
     favorites,
     me,
     player,
@@ -80,7 +79,6 @@ for module in (
     player,
     favorites,
     recent,
-    downloads,
     me,
     assets,
 ):

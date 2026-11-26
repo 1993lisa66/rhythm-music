@@ -13,7 +13,6 @@ from ..deps import get_current_user, get_optional_user, user_id_of
 from ..errors import ApiError, not_found
 from ..lyrics_source import fetch_lyrics
 from ..models import (
-    Download,
     Favorite,
     LyricLine,
     PlayEvent,
@@ -110,7 +109,7 @@ def delete_song(
 ) -> dict:
     """从曲库彻底删除一首歌。
 
-    先清掉关联数据（歌单曲目 / 收藏 / 播放记录 / 下载 / 队列 / 歌词），
+    先清掉关联数据（歌单曲目 / 收藏 / 播放记录 / 队列 / 歌词），
     再删 OSS 上的音频与封面对象。资源删除是 best-effort：
     OSS 未配置或请求失败不会回滚曲库记录的移除。
     """
@@ -121,7 +120,6 @@ def delete_song(
     db.execute(delete(PlaylistTrack).where(PlaylistTrack.song_id == song_id))
     db.execute(delete(Favorite).where(Favorite.song_id == song_id))
     db.execute(delete(PlayEvent).where(PlayEvent.song_id == song_id))
-    db.execute(delete(Download).where(Download.song_id == song_id))
 
     # 用户队列里可能还排着这首歌：逐用户重写队列并修正当前下标
     affected = db.scalars(

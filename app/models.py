@@ -131,17 +131,6 @@ class PlayEvent(Base):
     played_at: Mapped[datetime] = mapped_column(DateTime, default=now_local, index=True)
 
 
-class Download(Base):
-    __tablename__ = "downloads"
-
-    user_id: Mapped[str] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
-    song_id: Mapped[str] = mapped_column(ForeignKey("songs.id"), primary_key=True)
-    size: Mapped[str] = mapped_column(String(16), default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
-
-
 class QueueItem(Base):
     __tablename__ = "queue_items"
 

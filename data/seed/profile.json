@@ -38,11 +38,6 @@
         "value": "今天 20 首"
       },
       {
-        "icon": "download",
-        "name": "离线下载",
-        "value": "30 首"
-      },
-      {
         "icon": "playlist",
         "name": "我的歌单",
         "value": "12 个"
