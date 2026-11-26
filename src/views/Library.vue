@@ -103,7 +103,7 @@ const pickSort = (key) => {
         class="sec sec--recent"
         :title="library.recent.title"
         :more="library.recent.more"
-        @more="router.push('/search')"
+        @more="router.push('/recent')"
       />
 
       <div class="card">
@@ -152,7 +152,12 @@ const pickSort = (key) => {
         </template>
       </div>
 
-      <SectionHeader class="sec sec--playlists" :title="library.playlists.title" />
+      <SectionHeader
+        class="sec sec--playlists"
+        :title="library.playlists.title"
+        more="全部 ›"
+        @more="router.push('/mylists')"
+      />
 
       <div class="pls">
         <button

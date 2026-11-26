@@ -10,6 +10,8 @@ import Queue from '../views/Queue.vue'
 import Lyrics from '../views/Lyrics.vue'
 import Settings from '../views/Settings.vue'
 import Downloads from '../views/Downloads.vue'
+import Recent from '../views/Recent.vue'
+import MyLists from '../views/MyLists.vue'
 
 const routes = [
   { path: '/', redirect: '/discover' },
@@ -54,6 +56,18 @@ const routes = [
     name: 'downloads',
     component: Downloads,
     meta: { tab: 'profile', title: '离线下载', subpage: true }
+  },
+  {
+    path: '/recent',
+    name: 'recent',
+    component: Recent,
+    meta: { tab: 'profile', title: '最近播放', subpage: true }
+  },
+  {
+    path: '/mylists',
+    name: 'mylists',
+    component: MyLists,
+    meta: { tab: 'profile', title: '我的歌单', subpage: true }
   },
   {
     path: '/settings',

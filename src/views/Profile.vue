@@ -8,9 +8,9 @@ const router = useRouter()
 const goMenu = (item) => {
   const routes = {
     我的收藏: '/playlist/private',
-    最近播放: '/library',
+    最近播放: '/recent',
     离线下载: '/downloads',
-    我的歌单: '/library'
+    我的歌单: '/mylists'
   }
   const to = routes[item.name]
   if (to) router.push(to)

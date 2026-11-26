@@ -80,7 +80,7 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
         class="sec sec--recent"
         :title="discover.recent.title"
         :more="discover.recent.more"
-        @more="router.push('/library')"
+        @more="router.push('/recent')"
       />
 
       <ul class="recent">
