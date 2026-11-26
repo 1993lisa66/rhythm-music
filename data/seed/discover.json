@@ -5,19 +5,34 @@
   "featured": {
     "sectionTitle": "今日推荐",
     "more": "全部 ›",
-    "playlistId": "sunset-walk"
+    "playlistId": "mn100"
   },
   "moods": {
     "title": "随心听",
     "items": [
-      { "name": "治愈", "tone": "sage", "genre": "治愈" },
-      { "name": "专注", "tone": "honey", "genre": "轻音乐" },
-      { "name": "入眠", "tone": "plum", "genre": "民谣" }
+      {
+        "name": "情歌",
+        "tone": "sage",
+        "genre": "台语情歌"
+      },
+      {
+        "name": "酒歌",
+        "tone": "honey",
+        "genre": "台语酒歌"
+      },
+      {
+        "name": "夜曲",
+        "tone": "plum",
+        "genre": "台语夜曲"
+      }
     ]
   },
   "recent": {
     "title": "最近播放",
     "more": "全部 ›",
-    "songIds": ["qingtian", "wanfeng"]
+    "songIds": [
+      "mn2451",
+      "mn2452"
+    ]
   }
 }

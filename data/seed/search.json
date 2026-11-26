@@ -5,41 +5,53 @@
     "title": "热门搜索",
     "refresh": "换一换",
     "items": [
-      { "text": "日落", "tone": "primary" },
-      { "text": "治愈系", "tone": "sage" },
-      { "text": "周杰伦", "tone": "honey" },
-      { "text": "轻音乐", "tone": "plum" }
+      {
+        "text": "蔡小虎",
+        "tone": "primary"
+      },
+      {
+        "text": "韩宝仪",
+        "tone": "sage"
+      },
+      {
+        "text": "对唱",
+        "tone": "honey"
+      },
+      {
+        "text": "酒",
+        "tone": "plum"
+      }
     ]
   },
   "recommend": {
     "title": "猜你喜欢",
     "items": [
       {
-        "id": "wanfeng",
-        "title": "晚风",
-        "sub": "春野 · 治愈系",
-        "cover": "/covers/cover_1.jpg",
+        "id": "mn2451",
+        "title": "风雨无情",
+        "sub": "蔡小虎 · 台语情歌",
+        "cover": "/covers/album-03.jpg",
         "size": "lg"
       },
       {
-        "id": "riluo",
-        "title": "日落海岸",
-        "sub": "Various · 轻音乐",
-        "cover": "/covers/cover_5.jpg",
+        "id": "mn2481",
+        "title": "相逢的酒",
+        "sub": "蔡小虎 / 龙千玉 · 台语对唱",
+        "cover": "/covers/album-10.jpg",
         "size": "lg"
       },
       {
-        "id": "shanye",
-        "title": "山野",
+        "id": "mn2466",
+        "title": "月娘半屏圆",
         "sub": "",
-        "cover": "/covers/cover_6.jpg",
+        "cover": "/covers/album-02.jpg",
         "size": "sm"
       },
       {
-        "id": "chengshiye",
-        "title": "城市夜",
+        "id": "mn2492",
+        "title": "黄昏的故乡",
         "sub": "",
-        "cover": "/covers/cover_7.jpg",
+        "cover": "/covers/album-07.jpg",
         "size": "sm"
       }
     ]

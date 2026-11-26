@@ -1,8 +1,32 @@
 {
   "title": "最近播放",
   "groups": [
-    { "label": "今天", "songIds": ["wanfeng", "xiaoban", "qinglang", "qingtian"] },
-    { "label": "昨天", "songIds": ["riluo", "shanye", "chengshiye", "huanghun"] },
-    { "label": "更早", "songIds": ["xinghe", "manxialai", "zaochun", "wuye"] }
+    {
+      "label": "今天",
+      "songIds": [
+        "mn2451",
+        "mn2452",
+        "mn2453",
+        "mn2454"
+      ]
+    },
+    {
+      "label": "昨天",
+      "songIds": [
+        "mn2455",
+        "mn2456",
+        "mn2457",
+        "mn2458"
+      ]
+    },
+    {
+      "label": "更早",
+      "songIds": [
+        "mn2459",
+        "mn2460",
+        "mn2461",
+        "mn2462"
+      ]
+    }
   ]
 }

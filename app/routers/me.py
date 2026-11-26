@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..deps import get_current_user
 from ..models import Playlist, User
-from ..schemas import ProfileOut, SettingsOut, SettingsPatch
+from ..schemas import PlaylistListOut, ProfileOut, SettingsOut, SettingsPatch
 from ..services import computed_stats, get_content, settings_payload, update_settings
 from .auth import user_out
 
@@ -87,7 +87,7 @@ def get_profile(user: User = Depends(get_current_user), db: Session = Depends(ge
     }
 
 
-@router.get("/me/playlists", summary="我的歌单（按创建顺序）")
+@router.get("/me/playlists", response_model=PlaylistListOut, summary="我的歌单（按创建顺序）")
 def my_playlists(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     from ..services import playlist_summary
 

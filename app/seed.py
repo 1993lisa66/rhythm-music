@@ -42,21 +42,9 @@ from .models import (
 from .security import hash_password
 from .services import DEFAULT_SETTINGS
 
-# 与前端设计稿的初始队列一致
-DEFAULT_QUEUE = [
-    "wanfeng",
-    "xiaoban",
-    "riluo",
-    "qinglang",
-    "huanghun",
-    "xinghe",
-    "shanye",
-    "chengshiye",
-    "manxialai",
-    "zaochun",
-    "wuye",
-    "qingtian",
-]
+# 初始队列取曲库前 12 首（对象键写在 songs.json 里，避免换库后残留旧 id）
+def default_queue() -> list[str]:
+    return [item["id"] for item in (_load("songs") or [])[:12]]
 
 CONTENT_KEYS = ("discover", "library", "profile", "search")
 
@@ -140,8 +128,11 @@ def provision_user(db: Session, user: User, with_demo_data: bool = False) -> Non
             )
         )
 
+    if not user.avatar:
+        user.avatar = "/covers/avatar.jpg"
+
     if not db.scalar(select(QueueItem.position).where(QueueItem.user_id == user.id)):
-        for position, song_id in enumerate(DEFAULT_QUEUE):
+        for position, song_id in enumerate(default_queue()):
             db.add(QueueItem(user_id=user.id, position=position, song_id=song_id))
 
     for key, value in DEFAULT_SETTINGS.items():

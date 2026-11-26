@@ -1,14 +1,25 @@
 {
   "title": "音乐库",
   "searchPlaceholder": "搜索我的音乐",
-  "tabs": ["歌曲", "歌单", "专辑"],
+  "tabs": [
+    "歌曲",
+    "歌单",
+    "专辑"
+  ],
   "recent": {
     "title": "最近添加",
     "more": "全部 ›",
-    "songIds": ["wanfeng", "xiaoban", "qinglang"]
+    "songIds": [
+      "mn2451",
+      "mn2452",
+      "mn2453"
+    ]
   },
   "playlists": {
     "title": "我的歌单",
-    "ids": ["private", "commute"]
+    "ids": [
+      "mn100",
+      "wine"
+    ]
   }
 }
