@@ -1,0 +1,47 @@
+{
+  "placeholder": "搜索你喜欢的音乐",
+  "cancel": "取消",
+  "hot": {
+    "title": "热门搜索",
+    "refresh": "换一换",
+    "items": [
+      { "text": "日落", "tone": "primary" },
+      { "text": "治愈系", "tone": "sage" },
+      { "text": "周杰伦", "tone": "honey" },
+      { "text": "轻音乐", "tone": "plum" }
+    ]
+  },
+  "recommend": {
+    "title": "猜你喜欢",
+    "items": [
+      {
+        "id": "wanfeng",
+        "title": "晚风",
+        "sub": "春野 · 治愈系",
+        "cover": "/covers/cover_1.jpg",
+        "size": "lg"
+      },
+      {
+        "id": "riluo",
+        "title": "日落海岸",
+        "sub": "Various · 轻音乐",
+        "cover": "/covers/cover_5.jpg",
+        "size": "lg"
+      },
+      {
+        "id": "shanye",
+        "title": "山野",
+        "sub": "",
+        "cover": "/covers/cover_6.jpg",
+        "size": "sm"
+      },
+      {
+        "id": "chengshiye",
+        "title": "城市夜",
+        "sub": "",
+        "cover": "/covers/cover_7.jpg",
+        "size": "sm"
+      }
+    ]
+  }
+}

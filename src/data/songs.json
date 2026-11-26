@@ -1,0 +1,122 @@
+[
+  {
+    "id": "wanfeng",
+    "title": "晚风",
+    "artist": "春野",
+    "album": "晚风集",
+    "duration": 222,
+    "cover": "/covers/cover_1.jpg",
+    "genre": "治愈",
+    "liked": true
+  },
+  {
+    "id": "xiaoban",
+    "title": "小半",
+    "artist": "陈粒",
+    "album": "小半",
+    "duration": 245,
+    "cover": "/covers/cover_2.jpg",
+    "genre": "独立",
+    "liked": false
+  },
+  {
+    "id": "qinglang",
+    "title": "晴朗",
+    "artist": "许巍",
+    "album": "每一刻都是崭新的",
+    "duration": 318,
+    "cover": "/covers/cover_3.jpg",
+    "genre": "摇滚",
+    "liked": false
+  },
+  {
+    "id": "qingtian",
+    "title": "晴天",
+    "artist": "周杰伦",
+    "album": "叶惠美",
+    "duration": 269,
+    "cover": "/covers/cover_4.jpg",
+    "genre": "流行",
+    "liked": true
+  },
+  {
+    "id": "riluo",
+    "title": "日落海岸",
+    "artist": "Various Artists",
+    "album": "海岸线",
+    "duration": 302,
+    "cover": "/covers/cover_5.jpg",
+    "genre": "轻音乐",
+    "liked": false
+  },
+  {
+    "id": "shanye",
+    "title": "山野",
+    "artist": "屿声",
+    "album": "山野",
+    "duration": 236,
+    "cover": "/covers/cover_6.jpg",
+    "genre": "治愈",
+    "liked": false
+  },
+  {
+    "id": "chengshiye",
+    "title": "城市夜",
+    "artist": "夜行者",
+    "album": "城市夜",
+    "duration": 252,
+    "cover": "/covers/cover_7.jpg",
+    "genre": "电子",
+    "liked": false
+  },
+  {
+    "id": "huanghun",
+    "title": "黄昏",
+    "artist": "春野",
+    "album": "晚风集",
+    "duration": 273,
+    "cover": "/covers/cover_8.jpg",
+    "genre": "治愈",
+    "liked": false
+  },
+  {
+    "id": "xinghe",
+    "title": "星河",
+    "artist": "陈粒",
+    "album": "洄游",
+    "duration": 281,
+    "cover": "/covers/cover_9.jpg",
+    "genre": "独立",
+    "liked": false
+  },
+  {
+    "id": "manxialai",
+    "title": "慢下来",
+    "artist": "屿声",
+    "album": "慢下来",
+    "duration": 208,
+    "cover": "/covers/cover_10.jpg",
+    "genre": "治愈",
+    "liked": false
+  },
+  {
+    "id": "zaochun",
+    "title": "早春的树",
+    "artist": "许巍",
+    "album": "爱如少年",
+    "duration": 292,
+    "cover": "/covers/cover_11.jpg",
+    "genre": "民谣",
+    "liked": false
+  },
+  {
+    "id": "wuye",
+    "title": "午夜电台",
+    "artist": "夜行者",
+    "album": "午夜电台",
+    "duration": 344,
+    "cover": "/covers/cover_12.jpg",
+    "genre": "电子",
+    "liked": true
+  }
+]
