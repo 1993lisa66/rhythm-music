@@ -6,6 +6,10 @@ import Search from '../views/Search.vue'
 import Profile from '../views/Profile.vue'
 import Playlist from '../views/Playlist.vue'
 import NowPlaying from '../views/NowPlaying.vue'
+import Queue from '../views/Queue.vue'
+import Lyrics from '../views/Lyrics.vue'
+import Settings from '../views/Settings.vue'
+import Downloads from '../views/Downloads.vue'
 
 const routes = [
   { path: '/', redirect: '/discover' },
@@ -37,7 +41,31 @@ const routes = [
     path: '/playlist/:id',
     name: 'playlist',
     component: Playlist,
-    meta: { tab: 'discover', title: '歌单' }
+    meta: { tab: 'discover', title: '歌单', subpage: true }
+  },
+  {
+    path: '/queue',
+    name: 'queue',
+    component: Queue,
+    meta: { tab: 'discover', title: '播放队列', subpage: true }
+  },
+  {
+    path: '/downloads',
+    name: 'downloads',
+    component: Downloads,
+    meta: { tab: 'profile', title: '离线下载', subpage: true }
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: Settings,
+    meta: { tab: 'profile', title: '设置', subpage: true }
+  },
+  {
+    path: '/lyrics',
+    name: 'lyrics',
+    component: Lyrics,
+    meta: { tab: '', title: '歌词', immersive: true }
   },
   {
     path: '/now',

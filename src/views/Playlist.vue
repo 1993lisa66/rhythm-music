@@ -1,14 +1,20 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import TrackRow from '@/components/TrackRow.vue'
+import ActionSheet from '@/components/ActionSheet.vue'
 import playlists from '@/data/playlists.json'
-import { current, getSong, playSong, state } from '@/store/player'
+import { current, enqueue, getSong, playSong, state } from '@/store/player'
+import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
+import { goBack } from '@/utils/nav'
 
 const route = useRoute()
 const router = useRouter()
+
+const sheet = ref(false)
+const favorited = ref(false)
 
 const playlist = computed(
   () => playlists.find((p) => p.id === route.params.id) || playlists[0]
@@ -37,16 +43,51 @@ const shuffleAll = () => {
 }
 
 const playTrack = (t) => playSong(t.id, trackIds.value)
+
+const back = () => goBack(router, '/discover')
+
+const actions = computed(() => [
+  { key: 'queue', label: '添加到播放队列', icon: 'queue' },
+  { key: 'favorite', label: favorited.value ? '取消收藏歌单' : '收藏歌单', icon: 'heart', active: favorited.value },
+  { key: 'share', label: '分享歌单', icon: 'share' },
+  { key: 'downloads', label: '查看离线下载', icon: 'download' }
+])
+
+const onPick = async (key) => {
+  sheet.value = false
+  if (key === 'queue') {
+    const added = enqueue(trackIds.value)
+    toast(added ? `已添加 ${added} 首到播放队列` : '队列里已经有这些歌了')
+  } else if (key === 'favorite') {
+    favorited.value = !favorited.value
+    toast(favorited.value ? '已收藏歌单' : '已取消收藏')
+  } else if (key === 'share') {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast('歌单链接已复制')
+    } catch {
+      toast('当前环境不支持复制链接')
+    }
+  } else if (key === 'downloads') {
+    router.push('/downloads')
+  }
+}
 </script>
 
 <template>
   <div class="page">
     <div class="page__canvas">
-      <button type="button" class="nav nav--back" aria-label="返回" @click="router.back()">
+      <button type="button" class="nav nav--back" aria-label="返回" @click="back">
         <Icon name="back" :size="22" :stroke="2" />
       </button>
 
-      <button type="button" class="nav nav--more" aria-label="更多操作">
+      <button
+        type="button"
+        class="nav nav--more"
+        aria-label="更多操作"
+        aria-haspopup="dialog"
+        @click="sheet = true"
+      >
         <Icon name="more" :size="22" />
       </button>
 
@@ -82,6 +123,15 @@ const playTrack = (t) => playSong(t.id, trackIds.value)
         />
       </div>
     </div>
+
+    <ActionSheet
+      :open="sheet"
+      :title="playlist.title"
+      :subtitle="`${playlist.creator} · ${playlist.count} 首`"
+      :actions="actions"
+      @pick="onPick"
+      @close="sheet = false"
+    />
   </div>
 </template>
 

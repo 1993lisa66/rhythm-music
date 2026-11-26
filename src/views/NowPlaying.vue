@@ -2,6 +2,10 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
+import ActionSheet from '@/components/ActionSheet.vue'
+import { settings } from '@/store/settings'
+import { toast } from '@/store/toast'
+import { goBack } from '@/utils/nav'
 import {
   current,
   currentLyrics,
@@ -22,6 +26,38 @@ import { coverStyle, fmtTime } from '@/utils/format'
 const router = useRouter()
 const barRef = ref(null)
 const dragging = ref(false)
+const sheet = ref(false)
+
+const back = () => goBack(router, '/discover')
+
+const actions = computed(() => [
+  { key: 'like', label: liked.value ? '取消收藏' : '收藏歌曲', icon: 'heart', active: liked.value },
+  { key: 'queue', label: '播放队列', icon: 'queue' },
+  { key: 'album', label: '查看专辑', icon: 'note' },
+  { key: 'share', label: '分享歌曲', icon: 'share' }
+])
+
+const openQueue = () => router.push('/queue')
+const openLyrics = () => router.push('/lyrics')
+
+const onPick = async (key) => {
+  sheet.value = false
+  if (key === 'like') {
+    toggleLike()
+    toast(liked.value ? '已收藏' : '已取消收藏')
+  } else if (key === 'queue') {
+    openQueue()
+  } else if (key === 'album') {
+    router.push({ path: '/search', query: { q: current.value.album } })
+  } else if (key === 'share') {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast('歌曲链接已复制')
+    } catch {
+      toast('当前环境不支持复制链接')
+    }
+  }
+}
 
 const totalText = computed(() => fmtTime(current.value.duration))
 const liked = computed(() => !!state.liked[current.value.id])
@@ -75,11 +111,17 @@ const onKey = (e) => {
 <template>
   <div class="page page--dark">
     <div class="page__canvas">
-      <button type="button" class="nav nav--back" aria-label="返回" @click="router.back()">
+      <button type="button" class="nav nav--back" aria-label="返回" @click="back">
         <Icon name="back" :size="22" :stroke="2" />
       </button>
       <p class="nav__title">正在播放</p>
-      <button type="button" class="nav nav--more" aria-label="更多操作">
+      <button
+        type="button"
+        class="nav nav--more"
+        aria-label="更多操作"
+        aria-haspopup="dialog"
+        @click="sheet = true"
+      >
         <Icon name="more" :size="22" />
       </button>
 
@@ -163,20 +205,20 @@ const onKey = (e) => {
         </button>
       </div>
 
-      <div class="lyrics">
+      <div v-if="settings.showLyrics" class="lyrics">
         <div class="lyrics__head">
           <span class="lyrics__label">
             <Icon name="quote" :size="16" :stroke="1.8" />
             歌词
           </span>
-          <span class="lyrics__more">展开 ›</span>
+          <button type="button" class="lyrics__more" @click="openLyrics">展开 ›</button>
         </div>
         <p class="lyrics__line lyrics__line--prev">{{ prevLine }}</p>
         <p class="lyrics__line lyrics__line--cur">{{ curLine }}</p>
       </div>
 
       <div class="tools">
-        <button type="button" class="tool" aria-label="播放队列">
+        <button type="button" class="tool" aria-label="播放队列" @click="openQueue">
           <Icon name="queue" :size="20" :stroke="1.8" />
           <span>队列</span>
         </button>
@@ -190,12 +232,21 @@ const onKey = (e) => {
           <Icon name="heart" :size="20" :stroke="1.8" :filled="liked" />
           <span>收藏</span>
         </button>
-        <button type="button" class="tool" aria-label="更多">
+        <button type="button" class="tool" aria-label="更多" @click="sheet = true">
           <Icon name="more" :size="20" />
           <span>更多</span>
         </button>
       </div>
     </div>
+
+    <ActionSheet
+      :open="sheet"
+      :title="current.title"
+      :subtitle="`${current.artist} · ${current.album}`"
+      :actions="actions"
+      @pick="onPick"
+      @close="sheet = false"
+    />
   </div>
 </template>
 

@@ -21,6 +21,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* normalize.css 会给 h1 补 2em / 0.67em，这里统一交回组件控制 */
 h1,
 h2,
 h3,
@@ -28,6 +29,7 @@ h4,
 p,
 figure {
   margin: 0;
+  font-size: inherit;
   font-weight: inherit;
 }
 

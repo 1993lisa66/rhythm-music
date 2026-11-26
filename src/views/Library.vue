@@ -4,15 +4,40 @@ import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import SectionHeader from '@/components/SectionHeader.vue'
 import SongRow from '@/components/SongRow.vue'
+import ActionSheet from '@/components/ActionSheet.vue'
 import library from '@/data/library.json'
 import playlists from '@/data/playlists.json'
 import { allSongs, current, getSong, playSong, state } from '@/store/player'
+import { toast } from '@/store/toast'
 import { coverStyle, fmtTime } from '@/utils/format'
 
 const router = useRouter()
 const tab = ref(library.tabs[0])
 
-const songRows = computed(() => library.recent.songIds.map(getSong).filter(Boolean))
+const SORTS = [
+  { key: 'default', label: '默认顺序' },
+  { key: 'title', label: '按歌名排序' },
+  { key: 'duration', label: '按时长排序' },
+  { key: 'artist', label: '按歌手排序' }
+]
+
+const sortKey = ref('default')
+const filterOpen = ref(false)
+
+const sortActions = computed(() =>
+  SORTS.map((s) => ({ key: s.key, label: s.label, active: sortKey.value === s.key }))
+)
+
+const songRows = computed(() => {
+  const rows = library.recent.songIds.map(getSong).filter(Boolean)
+  if (sortKey.value === 'default') return rows
+  const copy = rows.slice()
+  if (sortKey.value === 'title') copy.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans-CN'))
+  else if (sortKey.value === 'duration') copy.sort((a, b) => a.duration - b.duration)
+  else if (sortKey.value === 'artist') copy.sort((a, b) => a.artist.localeCompare(b.artist, 'zh-Hans-CN'))
+  return copy
+})
+
 const songIds = computed(() => songRows.value.map((s) => s.id))
 const playlistRows = computed(() =>
   library.playlists.ids.map((id) => playlists.find((p) => p.id === id)).filter(Boolean)
@@ -29,6 +54,13 @@ const isRowActive = (song) => current.value.id === song.id && state.playing
 
 const playRow = (song) => playSong(song.id, songIds.value)
 const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
+
+const pickSort = (key) => {
+  sortKey.value = key
+  filterOpen.value = false
+  const label = SORTS.find((s) => s.key === key)?.label || ''
+  toast(`已切换：${label}`)
+}
 </script>
 
 <template>
@@ -36,7 +68,14 @@ const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
     <div class="page__canvas">
       <h1 class="title">{{ library.title }}</h1>
 
-      <button type="button" class="filter" aria-label="筛选">
+      <button
+        type="button"
+        class="filter"
+        :class="{ 'filter--on': sortKey !== 'default' }"
+        aria-label="筛选与排序"
+        aria-haspopup="dialog"
+        @click="filterOpen = true"
+      >
         <Icon name="filter" :size="20" :stroke="1.8" />
       </button>
 
@@ -130,6 +169,14 @@ const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
         </button>
       </div>
     </div>
+
+    <ActionSheet
+      :open="filterOpen"
+      title="排序方式"
+      :actions="sortActions"
+      @pick="pickSort"
+      @close="filterOpen = false"
+    />
   </div>
 </template>
 
@@ -160,6 +207,10 @@ const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
 .filter:hover {
   color: var(--primary);
   transform: translateY(-1px);
+}
+
+.filter--on {
+  color: var(--primary);
 }
 
 /* 分类 Tab：60 × 32 r16 */

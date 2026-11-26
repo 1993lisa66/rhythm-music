@@ -6,6 +6,7 @@ import SongRow from '@/components/SongRow.vue'
 import search from '@/data/search.json'
 import { current, playSong, searchSongs, state } from '@/store/player'
 import { coverStyle } from '@/utils/format'
+import { goBack } from '@/utils/nav'
 
 const router = useRouter()
 const route = useRoute()
@@ -35,7 +36,7 @@ const smallCards = recommend.filter((i) => i.size !== 'lg')
 
 const cancel = () => {
   if (query.value) query.value = ''
-  else router.back()
+  else goBack(router, '/discover')
 }
 
 const pickHot = (item) => {

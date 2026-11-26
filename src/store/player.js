@@ -37,6 +37,7 @@ export const state = reactive({
 })
 
 export const current = computed(() => byId[state.queue[state.index]] || songs[0])
+export const queueSongs = computed(() => state.queue.map((id) => byId[id]).filter(Boolean))
 export const progress = computed(() => clamp(state.position / current.value.duration, 0, 1))
 export const elapsedText = computed(() => {
   const m = Math.floor(state.position / 60)
@@ -71,6 +72,46 @@ export function playSong(id, queue) {
 
 export function toggle() {
   state.playing = !state.playing
+}
+
+/** 队列页：跳到指定位置播放 */
+export function playAt(index) {
+  if (index < 0 || index >= state.queue.length) return
+  state.index = index
+  state.position = 0
+  state.playing = true
+}
+
+/** 追加到队列尾部（自动去重），返回实际新增数量 */
+export function enqueue(ids = []) {
+  let added = 0
+  ids.forEach((id) => {
+    if (byId[id] && !state.queue.includes(id)) {
+      state.queue.push(id)
+      added += 1
+    }
+  })
+  return added
+}
+
+/** 从队列移除一项，保持当前播放项索引正确 */
+export function removeAt(index) {
+  if (state.queue.length <= 1 || index < 0 || index >= state.queue.length) return false
+  const wasCurrent = index === state.index
+  state.queue.splice(index, 1)
+  if (index < state.index) state.index -= 1
+  else if (wasCurrent) {
+    state.index = Math.min(state.index, state.queue.length - 1)
+    state.position = 0
+  }
+  return true
+}
+
+/** 清空队列，仅保留当前播放曲目 */
+export function clearQueue() {
+  state.queue = [state.queue[state.index]]
+  state.index = 0
+  state.position = 0
 }
 
 export function next(auto = false) {

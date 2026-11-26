@@ -4,11 +4,12 @@ import { useRoute } from 'vue-router'
 import StatusBar from './components/StatusBar.vue'
 import TabBar from './components/TabBar.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
+import Toast from './components/Toast.vue'
 import { tick } from './store/player'
 
 const route = useRoute()
 const immersive = computed(() => !!route.meta.immersive)
-const isPlaylist = computed(() => route.name === 'playlist')
+const subpage = computed(() => !!route.meta.subpage)
 
 let timer = null
 onMounted(() => {
@@ -31,9 +32,11 @@ onUnmounted(() => {
       </router-view>
 
       <template v-if="!immersive">
-        <MiniPlayer :compact="isPlaylist" />
-        <TabBar v-if="!isPlaylist" />
+        <MiniPlayer :compact="subpage" />
+        <TabBar v-if="!subpage" />
       </template>
+
+      <Toast />
     </div>
   </div>
 </template>

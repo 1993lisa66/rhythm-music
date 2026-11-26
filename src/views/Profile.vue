@@ -6,9 +6,17 @@ import profile from '@/data/profile.json'
 const router = useRouter()
 
 const goMenu = (item) => {
-  if (item.name === '离线下载') return
-  router.push('/library')
+  const routes = {
+    我的收藏: '/playlist/private',
+    最近播放: '/library',
+    离线下载: '/downloads',
+    我的歌单: '/library'
+  }
+  const to = routes[item.name]
+  if (to) router.push(to)
 }
+
+const openSettings = () => router.push('/settings')
 </script>
 
 <template>
@@ -16,7 +24,7 @@ const goMenu = (item) => {
     <div class="page__canvas">
       <h1 class="title">{{ profile.title }}</h1>
 
-      <button type="button" class="settings" aria-label="设置">
+      <button type="button" class="settings" aria-label="设置" @click="openSettings">
         <Icon name="settings" :size="22" :stroke="1.7" />
       </button>
 
