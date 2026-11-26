@@ -41,8 +41,9 @@ const playMood = (mood) => {
 
 const playRecent = (song) => playSong(song.id, recentIds.value)
 
-/* 画布原本固定 800px，绝对定位的行列表再长也撑不开滚动区；按行数撑高 */
-const canvasHeight = computed(() => Math.max(800, 576 + recent.value.length * 40 + 160))
+/* 画布原本固定 800px，绝对定位的行列表再长也撑不开滚动区；按行数撑高
+   卡片上下各 6px 内边距 + 每行 58px */
+const canvasHeight = computed(() => Math.max(800, 576 + 12 + recent.value.length * 58 + 160))
 
 onMounted(async () => {
   try {
@@ -106,18 +107,27 @@ onMounted(async () => {
       />
 
       <ul v-if="recent.length" class="recent">
-        <li v-for="song in recent" :key="song.id">
+        <li v-for="(song, i) in recent" :key="song.id" class="recent__li">
           <button
             type="button"
             class="rrow"
             :class="{ 'rrow--on': isRowActive(song) }"
             @click="playRecent(song)"
           >
-            <span class="rrow__cover" :style="coverStyle(song.cover)"></span>
+            <span class="rrow__rank num">{{ String(i + 1).padStart(2, '0') }}</span>
+            <span class="rrow__cover" :style="coverStyle(song.cover)">
+              <span v-if="isRowActive(song)" class="rrow__playing">
+                <Icon name="note" :size="11" :stroke="2" />
+              </span>
+            </span>
             <span class="rrow__text">
               <span class="rrow__title">{{ song.title }}</span>
               <span class="rrow__sub">{{ song.artist }} · {{ song.album }}</span>
             </span>
+            <span v-if="isRowActive(song)" class="rrow__eq" aria-hidden="true">
+              <i></i><i></i><i></i>
+            </span>
+            <span v-else class="rrow__go"><Icon name="play" :size="12" /></span>
           </button>
         </li>
       </ul>
@@ -292,48 +302,96 @@ onMounted(async () => {
   transform: scale(0.96);
 }
 
-/* 最近播放：标题 540–564，列表 576 起，与标题留出 12px 呼吸 */
+/* 最近播放：标题 540–564，卡片列表 576 起，与标题留出 12px 呼吸 */
 .recent {
   position: absolute;
   left: 24px;
   right: 24px;
   top: 576px;
+  padding: 6px 0;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.recent__li + .recent__li {
+  box-shadow: inset 0 1px 0 rgba(43, 31, 26, 0.05);
 }
 
 .rrow {
   width: 100%;
-  height: 40px;
+  height: 58px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   text-align: left;
-  border-radius: 12px;
   transition: background 0.16s ease;
 }
 
 .rrow:hover {
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(224, 120, 86, 0.045);
+}
+
+.rrow:active {
+  background: rgba(224, 120, 86, 0.09);
+}
+
+.rrow--on {
+  background: rgba(224, 120, 86, 0.06);
+}
+
+.rrow__rank {
+  width: 20px;
+  flex: 0 0 20px;
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--placeholder);
+  letter-spacing: -0.2px;
+}
+
+.rrow--on .rrow__rank {
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .rrow__cover {
-  width: 36px;
-  height: 36px;
+  position: relative;
+  width: 44px;
+  height: 44px;
   border-radius: var(--r-thumb);
   flex: 0 0 auto;
   background-color: var(--surface-cover);
+  box-shadow: 0 2px 6px rgba(43, 31, 26, 0.08);
+}
+
+.rrow__playing {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 5px rgba(224, 120, 86, 0.4);
 }
 
 .rrow__text {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+  gap: 3px;
 }
 
 .rrow__title {
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 19px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
   color: var(--ink);
   overflow: hidden;
   white-space: nowrap;
@@ -341,8 +399,8 @@ onMounted(async () => {
 }
 
 .rrow__sub {
-  font-size: 12px;
-  line-height: 15px;
+  font-size: 11px;
+  line-height: 14px;
   color: var(--ink-sub);
   overflow: hidden;
   white-space: nowrap;
@@ -351,5 +409,64 @@ onMounted(async () => {
 
 .rrow--on .rrow__title {
   color: var(--primary);
+}
+
+.rrow__go {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--placeholder);
+  opacity: 0;
+  transition: opacity 0.16s ease, color 0.16s ease;
+}
+
+.rrow:hover .rrow__go {
+  opacity: 1;
+  color: var(--primary);
+}
+
+.rrow__eq {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  padding-bottom: 3px;
+}
+
+.rrow__eq i {
+  width: 2px;
+  border-radius: 1px;
+  background: var(--primary);
+  animation: eq 0.9s ease-in-out infinite alternate;
+}
+
+.rrow__eq i:nth-child(1) { height: 5px; animation-delay: -0.2s; }
+.rrow__eq i:nth-child(2) { height: 11px; animation-delay: -0.5s; }
+.rrow__eq i:nth-child(3) { height: 7px; animation-delay: -0.35s; }
+
+@keyframes eq {
+  from { height: 3px; }
+  to { height: 12px; }
+}
+
+.recent-empty {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 584px;
+  margin: 0;
+  padding: 26px 0;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-sub);
 }
 </style>
