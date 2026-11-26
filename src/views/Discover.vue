@@ -41,6 +41,9 @@ const playMood = (mood) => {
 
 const playRecent = (song) => playSong(song.id, recentIds.value)
 
+/* 画布原本固定 800px，绝对定位的行列表再长也撑不开滚动区；按行数撑高 */
+const canvasHeight = computed(() => Math.max(800, 576 + recent.value.length * 40 + 160))
+
 onMounted(async () => {
   try {
     await refreshDiscover()
@@ -52,7 +55,7 @@ onMounted(async () => {
 
 <template>
   <div class="page">
-    <div class="page__canvas">
+    <div class="page__canvas" :style="{ height: `${canvasHeight}px` }">
       <p class="greeting">{{ discover.greeting }}</p>
       <h1 class="headline">{{ discover.headline }}</h1>
 

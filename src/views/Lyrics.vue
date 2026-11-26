@@ -2,6 +2,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
+import { api } from '@/api/client'
+import { setLyrics } from '@/store/data'
 import { goBack } from '@/utils/nav'
 import {
   current,
@@ -16,9 +18,26 @@ import {
 
 const router = useRouter()
 const lineRefs = ref([])
+const searching = ref(false)
+const searchTip = ref('')
 
 const lines = computed(() => currentLyrics.value)
 const back = () => goBack(router, '/now')
+
+const onlineFetch = async () => {
+  const id = current.value?.id
+  if (!id || searching.value) return
+  searching.value = true
+  searchTip.value = ''
+  try {
+    const payload = await api.fetchLyrics(id)
+    setLyrics(id, payload.lines || [])
+  } catch (error) {
+    searchTip.value = error?.message || '在线曲库暂未收录'
+  } finally {
+    searching.value = false
+  }
+}
 
 const setRef = (el, i) => {
   lineRefs.value[i] = el
@@ -69,7 +88,13 @@ const pick = (line) => {
         </button>
       </div>
 
-      <p v-else class="empty">这首歌暂时没有歌词</p>
+      <div v-else class="empty">
+        <p>这首歌暂时没有歌词</p>
+        <button type="button" class="empty__btn" :disabled="searching" @click="onlineFetch">
+          {{ searching ? '正在查找…' : '在线查找歌词' }}
+        </button>
+        <p v-if="searchTip" class="empty__tip">{{ searchTip }}</p>
+      </div>
 
       <div class="bar">
         <button type="button" class="bar__ctrl" aria-label="上一首" @click="prev">
@@ -194,6 +219,28 @@ const pick = (line) => {
   text-align: center;
   font-size: 14px;
   color: var(--on-dark-sub);
+}
+
+.empty__btn {
+  margin-top: 18px;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 18px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.empty__btn:disabled {
+  opacity: 0.6;
+}
+
+.empty__tip {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--on-dark-sub);
+  opacity: 0.8;
 }
 
 .bar {

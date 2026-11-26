@@ -40,7 +40,8 @@ const sortActions = computed(() =>
 )
 
 const songRows = computed(() => {
-  const rows = library.value.recent.items.slice()
+  /* 首屏已加载整张曲库，歌曲 tab 展示全部；未加载完才回落到聚合页的示例列表 */
+  const rows = (data.songs.length ? data.songs : library.value.recent.items).slice()
   if (sortKey.value === 'default') return rows
   if (sortKey.value === 'title') rows.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans-CN'))
   else if (sortKey.value === 'duration') rows.sort((a, b) => a.duration - b.duration)
@@ -51,7 +52,20 @@ const songRows = computed(() => {
 const songIds = computed(() => songRows.value.map((s) => s.id))
 const playlistRows = computed(() => library.value.playlists.items)
 /* 专辑视图直接用 /library/albums 的聚合结果，避免前端再猜分组口径 */
-const albumRows = computed(() => (data.albums || []).slice(0, 3))
+const albumRows = computed(() => data.albums || [])
+
+/* 固定 800px 画布会把长列表截断，按实际行数撑开整个滚动区 */
+const rowCount = computed(() => {
+  if (activeTab.value === '歌曲') return songRows.value.length
+  if (activeTab.value === '歌单') return playlistRows.value.length
+  return albumRows.value.length
+})
+const cardHeight = computed(() => Math.max(220, rowCount.value * 60 + 14))
+const playlistHeaderTop = computed(() => 242 + cardHeight.value + 14)
+const playlistGridTop = computed(() => playlistHeaderTop.value + 36)
+const canvasHeight = computed(() =>
+  Math.max(800, playlistGridTop.value + Math.ceil(playlistRows.value.length / 2) * 164 + 140)
+)
 
 const isRowActive = (song) => current.value.id === song.id && state.playing
 
@@ -79,7 +93,7 @@ onMounted(async () => {
 
 <template>
   <div class="page">
-    <div class="page__canvas">
+    <div class="page__canvas" :style="{ height: `${canvasHeight}px` }">
       <h1 class="title">{{ library.title }}</h1>
 
       <button
@@ -120,7 +134,7 @@ onMounted(async () => {
         @more="router.push('/recent')"
       />
 
-      <div class="card">
+      <div class="card" :style="{ height: `${cardHeight}px` }">
         <template v-if="activeTab === '歌曲'">
           <SongRow
             v-for="song in songRows"
@@ -168,12 +182,13 @@ onMounted(async () => {
 
       <SectionHeader
         class="sec sec--playlists"
+        :style="{ top: `${playlistHeaderTop}px` }"
         :title="library.playlists.title"
         more="全部 ›"
         @more="router.push('/mylists')"
       />
 
-      <div class="pls">
+      <div class="pls" :style="{ top: `${playlistGridTop}px` }">
         <button
           v-for="p in playlistRows"
           :key="p.id"
@@ -372,8 +387,9 @@ onMounted(async () => {
   left: 24px;
   right: 24px;
   top: 512px;
-  display: flex;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, 152px);
+  gap: 20px 14px;
 }
 
 .pl {

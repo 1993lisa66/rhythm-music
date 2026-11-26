@@ -107,6 +107,8 @@ export const api = {
   // 内容
   songs: (params) => request(`/songs${qs(params)}`),
   lyrics: (songId) => request(`/songs/${encodeURIComponent(songId)}/lyrics`, { auth: false }),
+  fetchLyrics: (songId) =>
+    request(`/songs/${encodeURIComponent(songId)}/lyrics/fetch`, { method: 'POST' }),
   playlists: () => request('/playlists'),
   playlist: (id) => request(`/playlists/${encodeURIComponent(id)}`),
   discover: () => request('/discover'),

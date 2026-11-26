@@ -55,6 +55,11 @@ export async function ensureLyrics(songId) {
 
 export const lyricsOf = (songId) => lyricCache[songId] || []
 
+/** 在线查到歌词后直接写入缓存，避免再发一次 GET */
+export function setLyrics(songId, lines) {
+  if (songId) lyricCache[songId] = lines || []
+}
+
 /** 首屏必需数据：曲库 + 我的歌单 + 设置；只加载一次，退出登录后重置 */
 export async function ensureAppData() {
   if (data.ready) return
