@@ -260,6 +260,15 @@ const onKey = (e) => {
   display: grid;
   place-items: center;
   opacity: 0.86;
+  /* 抬头于居中标题之上，避免按钮被全宽文本层遮挡而点不到 */
+  z-index: 2;
+}
+
+/* 视觉仍是 22px，实际点击热区外扩到 42px */
+.nav::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .nav--back {
@@ -273,14 +282,18 @@ const onKey = (e) => {
 .nav__title {
   position: absolute;
   top: 37px;
-  left: 0;
-  right: 0;
+  /* 左右各留 56px，从几何上就不与两枚 22px 按钮重叠 */
+  left: 56px;
+  right: 56px;
   text-align: center;
   font-size: 15px;
   font-weight: 600;
   line-height: 20px;
   color: var(--on-dark);
   letter-spacing: 0.4px;
+  /* 纯装饰层：不吃指针事件，否则会挡住左右两个按钮 */
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* 封面背后的暖色光晕 */
