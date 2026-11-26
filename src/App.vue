@@ -6,6 +6,7 @@ import TabBar from './components/TabBar.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
 import Toast from './components/Toast.vue'
 import { auth } from './store/auth'
+import { initAudio } from './store/audio'
 import { syncPlayer, tick } from './store/player'
 import { loadSettings } from './store/settings'
 
@@ -27,6 +28,7 @@ const hydrate = async () => {
 }
 
 onMounted(() => {
+  initAudio()
   timer = window.setInterval(tick, 1000)
   hydrate()
 })

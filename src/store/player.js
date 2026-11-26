@@ -19,6 +19,7 @@ const EMPTY = {
   artist: '',
   album: '',
   cover: '',
+  audio: '',
   duration: 1,
   liked: false
 }
@@ -58,12 +59,18 @@ export const isLiked = (id) => !!state.liked[id]
 /** 用接口返回的播放态整体覆盖本地状态 */
 function apply(payload) {
   if (!payload) return
+  const prev = state.current
+  const prevDuration = state.duration
   state.queue = payload.queue || []
   state.current = payload.current || null
   state.index = payload.index || 0
   state.playing = !!payload.playing
   state.position = payload.position || 0
   state.duration = payload.duration || 0
+  /* 同一首歌且带真实音频时，以音频元数据的时长为准（库里记的未必等于文件实际时长） */
+  if (payload.current?.audio && payload.current.id === prev?.id && prevDuration > state.duration) {
+    state.duration = prevDuration
+  }
   state.shuffle = !!payload.shuffle
   state.repeat = payload.repeat || 'all'
   state.queue.forEach((song) => {
@@ -160,7 +167,19 @@ export function seek(ratio) {
 }
 
 let advancing = false
+/**
+ * 是否由真实音频驱动进度（见 store/audio.js）。
+ * 曲目带 audio 字段时进度来自 <audio> 的 timeupdate，模拟走秒必须让位，
+ * 否则会出现「进度跑得比声音快一倍」。
+ */
+let useExternalClock = false
+
+export function setExternalClock(value) {
+  useExternalClock = !!value
+}
+
 export function tick() {
+  if (useExternalClock) return
   if (!state.playing || !state.duration) return
   if (state.position + 1 >= state.duration) {
     if (state.repeat === 'one') {
