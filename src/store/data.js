@@ -40,6 +40,12 @@ function indexSongs(songs = []) {
 
 export const getSong = (id) => songsById[id]
 
+/** 删除歌曲后同步本地曲库：移除记录并重建 id → song 索引 */
+export function removeSongLocal(songId) {
+  if (!songId || !songsById[songId]) return
+  indexSongs(data.songs.filter((song) => song.id !== songId))
+}
+
 /** 歌词按需加载并缓存，切歌时不必重复请求 */
 export async function ensureLyrics(songId) {
   if (!songId) return []
@@ -64,7 +70,7 @@ export function setLyrics(songId, lines) {
 export async function ensureAppData() {
   if (data.ready) return
   const [songs, playlists, settings] = await Promise.all([
-    api.songs({ limit: 200 }),
+    api.songs({ limit: 2000 }),
     api.myPlaylists(),
     api.settings()
   ])

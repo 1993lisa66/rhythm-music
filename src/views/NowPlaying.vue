@@ -3,6 +3,8 @@ import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
+import { api } from '@/api/client'
+import { removeSongLocal } from '@/store/data'
 import { settings } from '@/store/settings'
 import { toast } from '@/store/toast'
 import { goBack } from '@/utils/nav'
@@ -16,6 +18,7 @@ import {
   progress,
   seek,
   state,
+  syncPlayer,
   toggle,
   toggleLike,
   toggleShuffle,
@@ -27,6 +30,9 @@ const router = useRouter()
 const barRef = ref(null)
 const dragging = ref(false)
 const sheet = ref(false)
+/* 删除是破坏性操作：在同一个面板里切到二次确认态，避免误触 */
+const confirming = ref(false)
+const removing = ref(false)
 
 const back = () => goBack(router, '/discover')
 
@@ -34,13 +40,63 @@ const actions = computed(() => [
   { key: 'like', label: liked.value ? '取消收藏' : '收藏歌曲', icon: 'heart', active: liked.value },
   { key: 'queue', label: '播放队列', icon: 'queue' },
   { key: 'album', label: '查看专辑', icon: 'note' },
-  { key: 'share', label: '分享歌曲', icon: 'share' }
+  { key: 'share', label: '分享歌曲', icon: 'share' },
+  { key: 'remove', label: '删除歌曲资源', icon: 'trash', danger: true }
 ])
+
+const sheetTitle = computed(() => (confirming.value ? '删除歌曲资源？' : current.value.title))
+const sheetSubtitle = computed(() =>
+  confirming.value
+    ? `将从曲库移除《${current.value.title}》，并删除音频与封面文件，无法恢复`
+    : `${current.value.artist} · ${current.value.album}`
+)
+const sheetActions = computed(() =>
+  confirming.value ? [{ key: 'confirm', label: '确认删除', icon: 'trash', danger: true }] : actions.value
+)
+const sheetCancel = computed(() => (confirming.value ? '保留歌曲' : '取消'))
+
+const closeSheet = () => {
+  sheet.value = false
+  confirming.value = false
+}
+
+const openSheet = () => {
+  confirming.value = false
+  sheet.value = true
+}
 
 const openQueue = () => router.push('/queue')
 const openLyrics = () => router.push('/lyrics')
 
+/** 删除当前歌曲：后端清曲库记录 + OSS 资源，前端同步本地曲库并刷新播放态 */
+const removeSong = async () => {
+  if (removing.value) return
+  const song = current.value
+  if (!song.id) return
+  removing.value = true
+  try {
+    await api.deleteSong(song.id)
+    removeSongLocal(song.id)
+    closeSheet()
+    toast('已删除歌曲资源')
+    await syncPlayer()
+    if (!current.value.id) back()
+  } catch (error) {
+    toast(error?.message || '删除失败')
+  } finally {
+    removing.value = false
+  }
+}
+
 const onPick = async (key) => {
+  if (key === 'remove') {
+    confirming.value = true
+    return
+  }
+  if (key === 'confirm') {
+    await removeSong()
+    return
+  }
   sheet.value = false
   if (key === 'like') {
     toggleLike()
@@ -120,7 +176,7 @@ const onKey = (e) => {
         class="nav nav--more"
         aria-label="更多操作"
         aria-haspopup="dialog"
-        @click="sheet = true"
+        @click="openSheet"
       >
         <Icon name="more" :size="22" />
       </button>
@@ -232,7 +288,7 @@ const onKey = (e) => {
           <Icon name="heart" :size="20" :stroke="1.8" :filled="liked" />
           <span>收藏</span>
         </button>
-        <button type="button" class="tool" aria-label="更多" @click="sheet = true">
+        <button type="button" class="tool" aria-label="更多" @click="openSheet">
           <Icon name="more" :size="20" />
           <span>更多</span>
         </button>
@@ -241,11 +297,12 @@ const onKey = (e) => {
 
     <ActionSheet
       :open="sheet"
-      :title="current.title"
-      :subtitle="`${current.artist} · ${current.album}`"
-      :actions="actions"
+      :title="sheetTitle"
+      :subtitle="sheetSubtitle"
+      :actions="sheetActions"
+      :cancel-text="sheetCancel"
       @pick="onPick"
-      @close="sheet = false"
+      @close="closeSheet"
     />
   </div>
 </template>
