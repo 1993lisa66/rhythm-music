@@ -121,6 +121,24 @@ def sign_oss_url(key: str, ttl: int | None = None) -> str:
     )
 
 
+def delete_oss_url(key: str) -> str:
+    """给私有对象签一个 DELETE 请求地址（OSS V1，用于删除音频 / 封面资源）。"""
+    expires = oss_expires_at()
+    string_to_sign = f"DELETE\n\n\n{expires}\n/{OSS_BUCKET}/{key.lstrip('/')}"
+    signature = base64.b64encode(
+        hmac.new(
+            OSS_ACCESS_KEY_SECRET.encode("utf-8"),
+            string_to_sign.encode("utf-8"),
+            hashlib.sha1,
+        ).digest()
+    ).decode("ascii")
+    return (
+        f"{oss_host()}/{key.lstrip('/')}"
+        f"?OSSAccessKeyId={quote(OSS_ACCESS_KEY_ID, safe='')}"
+        f"&Expires={expires}&Signature={quote(signature, safe='')}"
+    )
+
+
 def asset_url(path: str, ttl: int | None = None) -> str:
     """库里的 /covers/x.jpg、audio/x.wav 换成私有 Bucket 的签名地址。
 

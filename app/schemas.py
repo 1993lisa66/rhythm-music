@@ -40,6 +40,13 @@ class SongListOut(CamelModel):
     items: list[SongOut]
 
 
+class SongDeleteOut(CamelModel):
+    deleted: bool
+    song_id: str
+    # 成功删除的 OSS 对象数（音频 + 封面，0~2）
+    assets_removed: int = 0
+
+
 class GenreOut(CamelModel):
     name: str
     count: int

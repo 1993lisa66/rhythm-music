@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import json
 import random
+import urllib.error
+import urllib.request
 from datetime import datetime
+from urllib.parse import urlparse
 
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session, selectinload
@@ -44,6 +47,34 @@ def fmt_time(seconds: int | float) -> str:
 
 def clamp(value: float, low: float, high: float) -> float:
     return max(low, min(high, value))
+
+
+def oss_object_key(value: str) -> str:
+    """把对象键或完整 URL 归一成 OSS 对象键（与 assets 换签同口径）。"""
+    text = (value or "").strip()
+    if not text:
+        return ""
+    if text.startswith("//"):
+        text = "https:" + text
+    if text.startswith(("http://", "https://")):
+        text = urlparse(text).path
+    return text.split("?")[0].split("#")[0].lstrip("/")
+
+
+def delete_oss_object(key: str) -> bool:
+    """删除 OSS 上的单个对象。
+
+    未配置 OSS、键为空或请求失败都返回 False，不抛异常：
+    资源清理是 best-effort，不能因为删文件失败而回滚曲库记录的删除。
+    """
+    if not key or not config.oss_ready():
+        return False
+    try:
+        request = urllib.request.Request(config.delete_oss_url(key), method="DELETE")
+        with urllib.request.urlopen(request, timeout=8) as response:
+            return 200 <= response.status < 300
+    except (urllib.error.URLError, OSError, ValueError):
+        return False
 
 
 def get_song(db: Session, song_id: str) -> Song:
