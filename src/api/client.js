@@ -117,6 +117,9 @@ export const api = {
   refreshHot: () => request('/search/hot/refresh', { method: 'POST' }),
   recommend: () => request('/search/recommend'),
 
+  // 资源：私有 Bucket 地址有有效期，到期前用旧地址换新签名
+  signAssets: (paths) => request('/assets/sign', { method: 'POST', body: { paths } }),
+
   // 播放器
   player: () => request('/player'),
   play: (body) => request('/player/play', { method: 'POST', body }),

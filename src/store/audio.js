@@ -12,6 +12,7 @@
  */
 
 import { watch } from 'vue'
+import { api } from '@/api/client'
 import { current, next, setExternalClock, state } from './player'
 
 let element = null
@@ -90,16 +91,80 @@ function attach(url) {
   audio.load()
 }
 
+/* ------------------------------------------------------------------ 换签
+ * 私有 Bucket 的地址带 Expires，页面开太久会过期（403）。
+ * 这里每分钟看一眼当前曲目的地址，剩余不足 10 分钟就调 /assets/sign 换新的；
+ * 换完只是把 state 里的地址替换掉，播放位置由 attach/loadedmetadata 续上。
+ */
+const RENEW_AHEAD = 600
+const RENEW_INTERVAL = 60 * 1000
+
+function expiresAt(url) {
+  const matched = /[?&]Expires=(\d+)/.exec(url || '')
+  return matched ? Number(matched[1]) : 0
+}
+
+/** 从签名地址里还原对象键；本地回落路径（/covers/x.jpg）也适用 */
+function objectKey(url) {
+  if (!url) return ''
+  try {
+    return new URL(url, window.location.origin).pathname.replace(/^\/+/, '')
+  } catch {
+    return String(url).split('?')[0].replace(/^\/+/, '')
+  }
+}
+
+let renewing = false
+
+async function renewAssets() {
+  const song = current.value
+  if (renewing || !song?.id) return
+  const keys = [...new Set([objectKey(song.audio), objectKey(song.cover)].filter(Boolean))]
+  if (!keys.length) return
+
+  renewing = true
+  try {
+    const payload = await api.signAssets(keys)
+    const fresh = new Map((payload?.items || []).map((item) => [item.key, item.url]))
+    if (!fresh.size) return
+    const patch = (target) => {
+      if (!target) return
+      const audio = fresh.get(objectKey(target.audio))
+      if (audio) target.audio = audio
+      const cover = fresh.get(objectKey(target.cover))
+      if (cover) target.cover = cover
+    }
+    patch(state.current)
+    /* 队列里同一首也换掉，队列页/迷你播放条才不会突然白图 */
+    state.queue.forEach((item) => {
+      if (item.id === song.id) patch(item)
+    })
+  } catch {
+    /* 换签失败不打断播放，下一分钟再试 */
+  } finally {
+    renewing = false
+  }
+}
+
+function checkExpiry() {
+  const url = current.value.audio || current.value.cover
+  const expires = expiresAt(url)
+  /* 没有 Expires 说明是本地回落路径，不需要换签 */
+  if (!expires) return
+  if (expires - Math.floor(Date.now() / 1000) < RENEW_AHEAD) renewAssets()
+}
+
 export function initAudio() {
   const audio = ensure()
   if (!audio) return
 
-  /* 切歌：换源；新曲若该继续播就播 */
+  /* 切歌：换源；新曲若该继续播就播。地址一变就顺手检查是否快过期 */
   watch(
     () => current.value.audio,
     (url) => {
       attach(url)
       if (url && state.playing) autoPlay()
+      checkExpiry()
     },
     { immediate: true }
   )
@@ -122,4 +187,7 @@ export function initAudio() {
       if (Math.abs(audio.currentTime - seconds) > 1.5) audio.currentTime = seconds
     }
   )
+
+  /* 之后每分钟巡检一次：地址是否快到期 */
+  window.setInterval(checkExpiry, RENEW_INTERVAL)
 }
