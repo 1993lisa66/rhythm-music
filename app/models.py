@@ -52,6 +52,8 @@ class Song(Base):
     genre: Mapped[str] = mapped_column(String(64), default="", index=True)
     duration: Mapped[int] = mapped_column(Integer, default=0)
     cover: Mapped[str] = mapped_column(String(300), default="")
+    # OSS 上的音频对象键（如 audio/wanfeng.wav）；空串表示暂无音频，前端退回模拟播放
+    audio: Mapped[str] = mapped_column(String(300), default="", server_default="")
     added_order: Mapped[int] = mapped_column(Integer, default=0)
 
 

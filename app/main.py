@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import func, select
 
 from . import config
-from .db import Base, SessionLocal, engine
+from .db import Base, SessionLocal, engine, ensure_columns
 from .errors import ApiError
 from .models import Playlist, Song, User
 from .routers import (
@@ -37,6 +37,7 @@ from .seed import ensure_seed
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    ensure_columns()
     ensure_seed()
     yield
 

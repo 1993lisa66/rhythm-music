@@ -138,7 +138,7 @@ def list_albums(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_
             {
                 "name": key,
                 "artist": song.artist,
-                "cover": config.public_asset(song.cover),
+                "cover": config.asset_url(song.cover),
                 "song_count": 0,
                 "duration": 0,
                 "track_ids": [],

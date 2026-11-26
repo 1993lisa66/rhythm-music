@@ -26,6 +26,8 @@ class SongOut(CamelModel):
     genre: str
     duration: int
     cover: str
+    # 私有 Bucket 的签名播放地址；无音频时为空串
+    audio: str = ""
     liked: bool = False
 
 

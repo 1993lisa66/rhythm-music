@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from . import config
@@ -37,3 +37,23 @@ def get_db() -> Iterator[Session]:
         yield db
     finally:
         db.close()
+
+
+# 后加字段的轻量补列（SQLite 的 ALTER TABLE ADD COLUMN 可直接执行，不丢数据）
+_ADDED_COLUMNS = {
+    "songs": {"audio": "VARCHAR(300) NOT NULL DEFAULT ''"},
+}
+
+
+def ensure_columns() -> None:
+    """把模型里新增的列补到已经存在的表上，免去重建库。"""
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for table, columns in _ADDED_COLUMNS.items():
+            if table not in existing_tables:
+                continue
+            present = {column["name"] for column in inspector.get_columns(table)}
+            for name, ddl in columns.items():
+                if name not in present:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))

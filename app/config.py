@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
 import os
+import time
 from pathlib import Path
+from urllib.parse import quote
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -60,27 +65,63 @@ REPEAT_MODES = ("all", "one", "off")
 # 首屏对齐设计稿：晚风 01:28 / 03:42
 DEFAULT_POSITION = 88
 
-# 阿里云 OSS：静态资源（封面 / 音频）存储，密钥只从环境变量或 .env 读取
+# 阿里云 OSS：静态资源（封面 / 音频）存储，密钥只从环境变量或 .env 读取。
+# Bucket 为私有读，所有资源地址都由后端现签（URL 带 Expires + Signature），
+# 前端拿到的依旧是普通字符串，接口形状不变。
 OSS_ACCESS_KEY_ID = os.getenv("OSS_ACCESS_KEY_ID", "")
 OSS_ACCESS_KEY_SECRET = os.getenv("OSS_ACCESS_KEY_SECRET", "")
 OSS_BUCKET = os.getenv("OSS_BUCKET", "")
 OSS_ENDPOINT = os.getenv("OSS_ENDPOINT", "")
-OSS_PUBLIC_BASE = os.getenv("OSS_PUBLIC_BASE", "")
+# 自定义域名 / CDN（可选）；不填则用 <bucket>.<endpoint>。兼容旧的 OSS_PUBLIC_BASE 名字。
+OSS_ASSET_HOST = os.getenv("OSS_ASSET_HOST") or os.getenv("OSS_PUBLIC_BASE", "")
+# 签名有效期（秒），默认 6 小时
+OSS_URL_TTL = int(os.getenv("OSS_URL_TTL", str(6 * 3600)))
+# 过期时间对齐粒度：同一窗口内签出的地址完全一致，浏览器缓存才能命中
+OSS_URL_ALIGN = int(os.getenv("OSS_URL_ALIGN", "1800"))
 
 
 def oss_ready() -> bool:
     return all((OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET, OSS_BUCKET, OSS_ENDPOINT))
 
 
-def public_asset(path: str) -> str:
-    """库里的 /covers/x.jpg 换成 OSS 公共地址；未配置 OSS_PUBLIC_BASE 时原样返回。
+def oss_host() -> str:
+    """资源访问域名，不带结尾斜杠。"""
+    host = OSS_ASSET_HOST.strip().rstrip("/")
+    if host.startswith("http://"):
+        host = "https://" + host[len("http://") :]
+    if host:
+        return host
+    endpoint = OSS_ENDPOINT.replace("https://", "").replace("http://", "").strip("/")
+    return f"https://{OSS_BUCKET}.{endpoint}"
 
-    前端只认一个 cover 字段，所以换源只在服务端做，接口形状不变。
+
+def sign_oss_url(key: str, ttl: int | None = None) -> str:
+    """给私有对象签一个临时 GET 地址（OSS V1：HMAC-SHA1 + Base64 放在 query 上）。"""
+    ttl = OSS_URL_TTL if ttl is None else ttl
+    expires = ((int(time.time()) + ttl) // OSS_URL_ALIGN + 1) * OSS_URL_ALIGN
+    string_to_sign = f"GET\n\n\n{expires}\n/{OSS_BUCKET}/{key.lstrip('/')}"
+    signature = base64.b64encode(
+        hmac.new(
+            OSS_ACCESS_KEY_SECRET.encode("utf-8"),
+            string_to_sign.encode("utf-8"),
+            hashlib.sha1,
+        ).digest()
+    ).decode("ascii")
+    return (
+        f"{oss_host()}/{key.lstrip('/')}"
+        f"?OSSAccessKeyId={quote(OSS_ACCESS_KEY_ID, safe='')}"
+        f"&Expires={expires}&Signature={quote(signature, safe='')}"
+    )
+
+
+def asset_url(path: str, ttl: int | None = None) -> str:
+    """库里的 /covers/x.jpg、audio/x.wav 换成私有 Bucket 的签名地址。
+
+    未配置 OSS 时原样返回，本地 /covers 静态目录仍可用，方便回退。
     """
     if not path or path.startswith(("http://", "https://", "data:")):
         return path
-    base = OSS_PUBLIC_BASE.strip().rstrip("/")
-    if not base:
+    if not oss_ready():
         return path
-    return f"{base}/{path.lstrip('/')}"
+    return sign_oss_url(path, ttl)
 

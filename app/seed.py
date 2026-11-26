@@ -23,7 +23,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from . import config
-from .db import Base, SessionLocal, engine
+from .db import Base, SessionLocal, engine, ensure_columns
 from .models import (
     ContentBlock,
     Download,
@@ -90,6 +90,7 @@ def seed_content(db: Session) -> None:
                 genre=item.get("genre", ""),
                 duration=int(item.get("duration", 0)),
                 cover=item.get("cover", ""),
+                audio=item.get("audio", ""),
                 added_order=order,
             )
         )
@@ -223,8 +224,29 @@ def create_user(
 
 
 # ---------------------------------------------------------------- 入口
+def sync_audio_keys(db: Session) -> int:
+    """把 songs.json 里的 audio 字段同步到已有库。
+
+    音频对象键放在内容文件里，是唯一来源；这里只补写入库后新增的键，
+    不改歌名/时长等其他字段，避免覆盖人工调整。
+    """
+    updated = 0
+    for item in _load("songs") or []:
+        audio = item.get("audio", "")
+        if not audio:
+            continue
+        song = db.get(Song, item["id"])
+        if song is not None and song.audio != audio:
+            song.audio = audio
+            updated += 1
+    if updated:
+        db.commit()
+    return updated
+
+
 def seed(reset: bool = False) -> bool:
     Base.metadata.create_all(engine)
+    ensure_columns()
 
     if reset:
         Base.metadata.drop_all(engine)
@@ -234,6 +256,8 @@ def seed(reset: bool = False) -> bool:
         created = not db.scalar(select(func.count()).select_from(Song))
         if created:
             seed_content(db)
+        else:
+            sync_audio_keys(db)
 
         demo = db.scalars(select(User).where(User.email == config.DEMO_EMAIL.lower())).first()
         if demo is None:

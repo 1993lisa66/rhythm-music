@@ -94,7 +94,7 @@ def search(
     songs = [song_out(song, liked) for song in song_rows]
     playlists = [playlist_summary(item) for item in playlist_rows]
     artists = [
-        {"name": name, "song_count": count, "cover": config.public_asset(cover or "")}
+        {"name": name, "song_count": count, "cover": config.asset_url(cover or "")}
         for name, count, cover in artist_rows
     ]
 
@@ -142,7 +142,7 @@ def recommend(db: Session = Depends(get_db)) -> dict:
                 "id": song_id,
                 "title": song.title if song else item.get("title", ""),
                 "sub": sub,
-                "cover": config.public_asset(song.cover) if song else item.get("cover", ""),
+                "cover": config.asset_url(song.cover) if song else item.get("cover", ""),
                 "size": item.get("size") or ("lg" if index < 2 else "sm"),
             }
         )

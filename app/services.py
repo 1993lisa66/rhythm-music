@@ -85,7 +85,8 @@ def song_out(song: Song, liked: set[str] | None = None) -> dict:
         "album": song.album,
         "genre": song.genre,
         "duration": song.duration,
-        "cover": config.public_asset(song.cover),
+        "cover": config.asset_url(song.cover),
+        "audio": config.asset_url(song.audio),
         "liked": song.id in liked if liked is not None else False,
     }
 
@@ -103,7 +104,7 @@ def playlist_summary(playlist: Playlist, track_count: int | None = None) -> dict
         "duration_text": playlist.duration_text,
         "desc": playlist.desc,
         "info": playlist.info,
-        "cover": config.public_asset(playlist.cover),
+        "cover": config.asset_url(playlist.cover),
         "tone": playlist.tone,
     }
 

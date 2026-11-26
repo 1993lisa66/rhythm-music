@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""把 static/covers 下的封面同步到阿里云 OSS（增量：同名同大小跳过）。
+"""把封面 / 音频等静态资源同步到阿里云 OSS（增量：同名同大小跳过）。
 
 用法：
-    python scripts/upload_covers.py             # 增量上传
-    python scripts/upload_covers.py --dry-run   # 只打印将要上传的文件
-    python scripts/upload_covers.py --force     # 全部重传
+    python scripts/upload_assets.py                        # 同步 static/covers → /covers
+    python scripts/upload_assets.py --dry-run              # 只打印计划
+    python scripts/upload_assets.py --force                # 全部重传
+    python scripts/upload_assets.py --source "/path/02 .wav" --prefix audio --name wanfeng.wav
+    python scripts/upload_assets.py --source /path/to/dir --prefix audio
 
 依赖：只用标准库（urllib + hmac + hashlib），不需要安装 oss2。
 配置：项目根目录 .env 或环境变量
     OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET / OSS_BUCKET / OSS_ENDPOINT
 可选：
-    OSS_PUBLIC_BASE  自定义域名 / CDN；不填则用 https://<bucket>.<endpoint>
+    OSS_ASSET_HOST  自定义域名 / CDN；不填则用 https://<bucket>.<endpoint>
+    OSS_URL_TTL     打印签名地址时用的有效期，默认 6 小时
+
+Bucket 为私有读，脚本不给对象加公共 ACL；下载地址由后端现签。
 """
 
 from __future__ import annotations
@@ -36,11 +41,17 @@ CONTENT_TYPES = {
     ".png": "image/png",
     ".webp": "image/webp",
     ".gif": "image/gif",
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".flac": "audio/flac",
+    ".ogg": "audio/ogg",
 }
 
 
 def _sign(method: str, content_md5: str, content_type: str, date: str, resource: str) -> str:
-    """OSS V1 签名：HMAC-SHA1(Base64)。"""
+    """OSS V1 签名：HMAC-SHA1 后 Base64。"""
     string_to_sign = f"{method}\n{content_md5}\n{content_type}\n{date}\n{resource}"
     digest = hmac.new(
         config.OSS_ACCESS_KEY_SECRET.encode("utf-8"),
@@ -68,7 +79,7 @@ def _request(method: str, key: str, body: bytes | None = None, content_type: str
         request.add_header("Content-Type", content_type)
 
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=300) as response:
             return response.status, response.headers
     except urllib.error.HTTPError as error:
         return error.code, error.headers
@@ -92,23 +103,26 @@ def upload(key: str, data: bytes, content_type: str) -> None:
         raise SystemExit(f"PUT {key} 失败：HTTP {status}")
 
 
-def public_url(key: str) -> str:
-    base = config.OSS_PUBLIC_BASE.rstrip("/")
-    if base:
-        return f"{base}/{key}"
-    endpoint = config.OSS_ENDPOINT.replace("https://", "").replace("http://", "").strip("/")
-    return f"https://{config.OSS_BUCKET}.{endpoint}/{key}"
+def collect(source: Path, name: str | None) -> list[tuple[str, Path]]:
+    """返回 (对象名, 本地路径) 列表；单文件用 name 覆盖对象名。"""
+    if source.is_file():
+        return [(name or source.name, source)]
+    if not source.is_dir():
+        raise SystemExit(f"文件或目录不存在：{source}")
+    return [
+        (name or path.name, path)
+        for path in sorted(source.iterdir())
+        if path.is_file() and not path.name.startswith("._")
+    ]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="同步封面到阿里云 OSS")
+    parser = argparse.ArgumentParser(description="同步静态资源到阿里云 OSS（私有 Bucket）")
+    parser.add_argument("--source", default=str(config.COVER_DIR), help="源文件或目录，默认 static/covers")
+    parser.add_argument("--prefix", default="covers", help="对象前缀，默认 covers")
+    parser.add_argument("--name", default=None, help="单文件上传时的对象名（默认用源文件名）")
     parser.add_argument("--dry-run", action="store_true", help="只打印计划，不实际上传")
     parser.add_argument("--force", action="store_true", help="忽略远端大小，全部重传")
-    parser.add_argument(
-        "--prefix",
-        default="covers",
-        help="对象前缀，默认 covers（即 OSS 上 /covers/xxx.jpg）",
-    )
     args = parser.parse_args()
 
     if not config.oss_ready():
@@ -125,14 +139,16 @@ def main() -> int:
         print(f"OSS 未配置，缺少：{', '.join(missing)}")
         return 2
 
-    files = sorted(p for p in config.COVER_DIR.iterdir() if p.is_file())
+    source = Path(args.source)
+    prefix = args.prefix.strip("/")
+    files = collect(source, args.name)
     if not files:
-        print(f"没有找到封面文件：{config.COVER_DIR}")
+        print(f"没有找到可上传的文件：{source}")
         return 1
 
     uploaded = skipped = 0
-    for path in files:
-        key = f"{args.prefix.strip('/')}/{path.name}"
+    for object_name, path in files:
+        key = f"{prefix}/{object_name}" if prefix else object_name
         data = path.read_bytes()
         size = len(data)
         exists = None if args.force else remote_size(key)
@@ -148,7 +164,8 @@ def main() -> int:
         print(f"上传  {key}（{size} 字节）")
 
     print(f"\n完成：上传 {uploaded}，跳过 {skipped}，共 {len(files)} 个文件")
-    print(f"公共地址示例：{public_url(f'{args.prefix}/' + files[0].name)}")
+    first_key = f"{prefix}/{files[0][0]}" if prefix else files[0][0]
+    print(f"签名地址示例（{config.OSS_URL_TTL}s 有效）：{config.sign_oss_url(first_key)}")
     return 0
 
 
