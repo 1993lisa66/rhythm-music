@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from .. import config
 from ..db import get_db
 from ..deps import get_optional_user, user_id_of
 from ..models import Playlist, Song, User
@@ -93,7 +94,7 @@ def search(
     songs = [song_out(song, liked) for song in song_rows]
     playlists = [playlist_summary(item) for item in playlist_rows]
     artists = [
-        {"name": name, "song_count": count, "cover": cover or ""}
+        {"name": name, "song_count": count, "cover": config.public_asset(cover or "")}
         for name, count, cover in artist_rows
     ]
 
@@ -141,7 +142,7 @@ def recommend(db: Session = Depends(get_db)) -> dict:
                 "id": song_id,
                 "title": song.title if song else item.get("title", ""),
                 "sub": sub,
-                "cover": song.cover if song else item.get("cover", ""),
+                "cover": config.public_asset(song.cover) if song else item.get("cover", ""),
                 "size": item.get("size") or ("lg" if index < 2 else "sm"),
             }
         )

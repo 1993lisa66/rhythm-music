@@ -71,3 +71,16 @@ OSS_PUBLIC_BASE = os.getenv("OSS_PUBLIC_BASE", "")
 def oss_ready() -> bool:
     return all((OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET, OSS_BUCKET, OSS_ENDPOINT))
 
+
+def public_asset(path: str) -> str:
+    """库里的 /covers/x.jpg 换成 OSS 公共地址；未配置 OSS_PUBLIC_BASE 时原样返回。
+
+    前端只认一个 cover 字段，所以换源只在服务端做，接口形状不变。
+    """
+    if not path or path.startswith(("http://", "https://", "data:")):
+        return path
+    base = OSS_PUBLIC_BASE.strip().rstrip("/")
+    if not base:
+        return path
+    return f"{base}/{path.lstrip('/')}"
+

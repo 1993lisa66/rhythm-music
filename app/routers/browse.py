@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .. import config
 from ..db import get_db
 from ..deps import get_optional_user, user_id_of
 from ..models import Playlist, Song, User
@@ -137,7 +138,7 @@ def list_albums(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_
             {
                 "name": key,
                 "artist": song.artist,
-                "cover": song.cover,
+                "cover": config.public_asset(song.cover),
                 "song_count": 0,
                 "duration": 0,
                 "track_ids": [],
