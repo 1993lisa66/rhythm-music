@@ -113,6 +113,21 @@ export const api = {
     request(`/songs/${encodeURIComponent(songId)}/lyrics/fetch`, { method: 'POST' }),
   playlists: () => request('/playlists'),
   playlist: (id) => request(`/playlists/${encodeURIComponent(id)}`),
+  createPlaylist: (body) => request('/playlists', { method: 'POST', body }),
+  updatePlaylist: (id, body) =>
+    request(`/playlists/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+  deletePlaylist: (id) =>
+    request(`/playlists/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  addPlaylistTracks: (id, songIds) =>
+    request(`/playlists/${encodeURIComponent(id)}/tracks`, {
+      method: 'POST',
+      body: { songIds }
+    }),
+  removePlaylistTrack: (id, songId) =>
+    request(
+      `/playlists/${encodeURIComponent(id)}/tracks/${encodeURIComponent(songId)}`,
+      { method: 'DELETE' }
+    ),
   discover: () => request('/discover'),
   library: () => request('/library'),
   albums: () => request('/library/albums'),

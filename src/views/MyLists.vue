@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
+import PlaylistFormSheet from '@/components/PlaylistFormSheet.vue'
+import { api } from '@/api/client'
 import { data, refreshPlaylists } from '@/store/data'
 import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
@@ -11,6 +13,29 @@ const router = useRouter()
 
 const playlists = computed(() => data.playlists)
 const open = (p) => router.push(`/playlist/${p.id}`)
+
+const creating = ref(false)
+const submitting = ref(false)
+
+const openCreate = () => {
+  creating.value = true
+}
+
+const createPlaylist = async ({ title, desc }) => {
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    const created = await api.createPlaylist({ title, desc })
+    await refreshPlaylists()
+    creating.value = false
+    toast('歌单已创建')
+    router.push(`/playlist/${created.id}`)
+  } catch (error) {
+    toast(error?.message || '创建失败')
+  } finally {
+    submitting.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -26,7 +51,10 @@ onMounted(async () => {
     <div class="page__canvas mylists">
       <PageNav title="我的歌单" fallback="/profile">
         <template #right>
-          <span class="count num">{{ playlists.length }} 个</span>
+          <button type="button" class="new" @click="openCreate">
+            <Icon name="plus" :size="14" :stroke="2.2" />
+            <span>新建</span>
+          </button>
         </template>
       </PageNav>
 
@@ -49,6 +77,14 @@ onMounted(async () => {
 
       <p class="tip">共 {{ playlists.length }} 个歌单，点击进入查看曲目</p>
     </div>
+
+    <PlaylistFormSheet
+      :open="creating"
+      mode="create"
+      :submitting="submitting"
+      @submit="createPlaylist"
+      @close="creating = false"
+    />
   </div>
 </template>
 
@@ -59,10 +95,23 @@ onMounted(async () => {
   padding: 92px 24px 140px;
 }
 
-.count {
+.new {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
-  line-height: 22px;
-  color: var(--ink-sub);
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(224, 120, 86, 0.1);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.new:active {
+  transform: scale(0.96);
+  background: rgba(224, 120, 86, 0.18);
 }
 
 .list {

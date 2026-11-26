@@ -4,7 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import TrackRow from '@/components/TrackRow.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
+import PlaylistFormSheet from '@/components/PlaylistFormSheet.vue'
+import AddTracksSheet from '@/components/AddTracksSheet.vue'
 import { api } from '@/api/client'
+import { refreshPlaylists } from '@/store/data'
 import { current, enqueue, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
@@ -14,6 +17,11 @@ const route = useRoute()
 const router = useRouter()
 
 const sheet = ref(false)
+/* 删除歌单需要在面板内二次确认，避免误触直接删掉整个歌单 */
+const confirming = ref(false)
+const editing = ref(false)
+const adding = ref(false)
+const submitting = ref(false)
 const favorited = ref(false)
 const playlist = ref(null)
 
@@ -29,13 +37,19 @@ const EMPTY = {
   info: '',
   cover: '',
   tone: 'primary',
+  owned: false,
   tracks: []
 }
 
 const detail = computed(() => playlist.value || EMPTY)
 const tracks = computed(() => detail.value.tracks)
+/* 只有自己的歌单能增删改，系统歌单保持只读 */
+const owned = computed(() => detail.value.owned === true)
 
 const trackIds = computed(() => tracks.value.map((t) => t.id))
+
+/* 列表高度按曲目数撑开，避免固定 250px 把后面的歌裁掉 */
+const canvasHeight = computed(() => Math.max(800, 476 + tracks.value.length * 52 + 96))
 
 const load = async (id) => {
   if (!id) return
@@ -45,6 +59,14 @@ const load = async (id) => {
     // 歌单不存在（含别人的私有歌单）时提示后回退，不留空白页
     toast(error?.message || '歌单加载失败')
     playlist.value = null
+  }
+}
+
+const syncLists = async () => {
+  try {
+    await refreshPlaylists()
+  } catch {
+    // 列表同步失败不影响详情页操作结果
   }
 }
 
@@ -69,16 +91,121 @@ onMounted(() => load(route.params.id))
 /* 从上个歌单直接跳到另一个歌单时组件会复用，需按 id 重新拉取 */
 watch(() => route.params.id, (id) => load(id))
 
-const actions = computed(() => [
-  { key: 'queue', label: '添加到播放队列', icon: 'queue' },
-  { key: 'favorite', label: favorited.value ? '取消收藏歌单' : '收藏歌单', icon: 'heart', active: favorited.value },
-  { key: 'share', label: '分享歌单', icon: 'share' },
-  { key: 'downloads', label: '查看离线下载', icon: 'download' }
-])
+const actions = computed(() => {
+  const list = [
+    { key: 'queue', label: '添加到播放队列', icon: 'queue' },
+    {
+      key: 'favorite',
+      label: favorited.value ? '取消收藏歌单' : '收藏歌单',
+      icon: 'heart',
+      active: favorited.value
+    },
+    { key: 'share', label: '分享歌单', icon: 'share' },
+    { key: 'downloads', label: '查看离线下载', icon: 'download' }
+  ]
+  if (owned.value) {
+    list.unshift({ key: 'add', label: '添加歌曲', icon: 'plus' })
+    list.unshift({ key: 'edit', label: '编辑歌单', icon: 'note' })
+    list.push({ key: 'delete', label: '删除歌单', icon: 'trash', danger: true })
+  }
+  return list
+})
+
+const sheetTitle = computed(() => (confirming.value ? '删除歌单？' : detail.value.title))
+
+const sheetSubtitle = computed(() =>
+  confirming.value
+    ? `将删除《${detail.value.title}》及其中的 ${detail.value.count} 首歌，歌曲本身仍保留在曲库`
+    : `${detail.value.creator} · ${detail.value.count} 首`
+)
+
+const sheetActions = computed(() =>
+  confirming.value
+    ? [
+        { key: 'delete-confirm', label: '确认删除', icon: 'trash', danger: true },
+        { key: 'keep', label: '保留歌单' }
+      ]
+    : actions.value
+)
+
+const openSheet = () => {
+  confirming.value = false
+  sheet.value = true
+}
+
+const removePlaylist = async () => {
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    await api.deletePlaylist(detail.value.id)
+    await syncLists()
+    toast('歌单已删除')
+    router.replace('/mylists')
+  } catch (error) {
+    toast(error?.message || '删除失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const saveEdit = async ({ title, desc }) => {
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    playlist.value = await api.updatePlaylist(detail.value.id, { title, desc })
+    editing.value = false
+    await syncLists()
+    toast('歌单已更新')
+  } catch (error) {
+    toast(error?.message || '保存失败')
+  } finally {
+    submitting.value = false
+  }
+}
+
+/* 弹层里每加一首都会触发，顺带刷新详情，让曲目数和时长实时跟上 */
+const onTracksAdded = async () => {
+  await load(detail.value.id)
+  await syncLists()
+}
+
+const removeTrack = async (track) => {
+  if (submitting.value) return
+  submitting.value = true
+  try {
+    playlist.value = await api.removePlaylistTrack(detail.value.id, track.id)
+    await syncLists()
+    toast(`已移出《${track.title}》`)
+  } catch (error) {
+    toast(error?.message || '移出失败')
+  } finally {
+    submitting.value = false
+  }
+}
 
 const onPick = async (key) => {
+  if (key === 'keep') {
+    confirming.value = false
+    sheet.value = false
+    return
+  }
+  if (key === 'delete') {
+    confirming.value = true
+    return
+  }
+  if (key === 'delete-confirm') {
+    sheet.value = false
+    confirming.value = false
+    await removePlaylist()
+    return
+  }
+
   sheet.value = false
-  if (key === 'queue') {
+  if (key === 'edit') {
+    editing.value = true
+  } else if (key === 'add') {
+    adding.value = true
+  } else if (key === 'queue') {
     const added = enqueue(trackIds.value)
     toast(added ? `已添加 ${added} 首到播放队列` : '队列里已经有这些歌了')
   } else if (key === 'favorite') {
@@ -99,7 +226,7 @@ const onPick = async (key) => {
 
 <template>
   <div class="page">
-    <div class="page__canvas">
+    <div class="page__canvas" :style="{ height: `${canvasHeight}px` }">
       <button type="button" class="nav nav--back" aria-label="返回" @click="back">
         <Icon name="back" :size="22" :stroke="2" />
       </button>
@@ -109,7 +236,7 @@ const onPick = async (key) => {
         class="nav nav--more"
         aria-label="更多操作"
         aria-haspopup="dialog"
-        @click="sheet = true"
+        @click="openSheet"
       >
         <Icon name="more" :size="22" />
       </button>
@@ -142,18 +269,44 @@ const onPick = async (key) => {
           :artist="t.artist"
           :duration="t.duration"
           :active="current.id === t.id && state.playing"
+          :removable="owned"
           @select="playTrack(t)"
+          @remove="removeTrack(t)"
         />
+
+        <div v-if="!tracks.length" class="tracks__empty">
+          <Icon name="note" :size="22" :stroke="1.5" />
+          <p class="tracks__empty-title">{{ owned ? '歌单还是空的' : '这个歌单还没有曲目' }}</p>
+          <p v-if="owned" class="tracks__empty-sub">点右上角「更多 → 添加歌曲」开始挑选</p>
+        </div>
       </div>
     </div>
 
     <ActionSheet
       :open="sheet"
-      :title="detail.title"
-      :subtitle="`${detail.creator} · ${detail.count} 首`"
-      :actions="actions"
+      :title="sheetTitle"
+      :subtitle="sheetSubtitle"
+      :actions="sheetActions"
       @pick="onPick"
       @close="sheet = false"
+    />
+
+    <PlaylistFormSheet
+      :open="editing"
+      mode="edit"
+      :initial-title="detail.title"
+      :initial-desc="detail.desc"
+      :submitting="submitting"
+      @submit="saveEdit"
+      @close="editing = false"
+    />
+
+    <AddTracksSheet
+      :open="adding"
+      :playlist-id="detail.id"
+      :existing-ids="trackIds"
+      @added="onTracksAdded"
+      @close="adding = false"
     />
   </div>
 </template>
@@ -309,17 +462,39 @@ const onPick = async (key) => {
   border: 1.5px solid var(--primary);
 }
 
-/* 曲目列表 342 × 250 */
+/* 曲目列表 342 宽，高度随曲目数增长（画布高度同步计算） */
 .tracks {
   position: absolute;
   left: 24px;
   top: 476px;
   width: 342px;
-  height: 250px;
+  min-height: 250px;
   border-radius: var(--r-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
   padding: 12px 0;
   overflow: hidden;
+}
+
+.tracks__empty {
+  height: 226px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--placeholder);
+}
+
+.tracks__empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-sub);
+}
+
+.tracks__empty-sub {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--placeholder);
 }
 </style>
