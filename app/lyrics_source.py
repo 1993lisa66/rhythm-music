@@ -9,7 +9,9 @@ LRCLIB 无需 API Key，但要求客户端带可识别的 User-Agent。
 from __future__ import annotations
 
 import json
+import random
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -56,16 +58,25 @@ def fetch_lyrics(title: str, artist: str, duration: int) -> list[dict]:
     request = urllib.request.Request(
         f"{LRCLIB_GET}?{query}", headers={"User-Agent": USER_AGENT, "Accept": "application/json"}
     )
-    try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
-            payload = json.load(response)
-    except urllib.error.HTTPError as error:
-        # 404 = 曲库未收录，属于正常结果；其余错误交给调用方判断是否重试
-        if error.code == 404:
-            return []
-        raise RuntimeError(f"歌词服务返回 HTTP {error.code}") from error
-    except Exception as error:  # 网络 / DNS / 超时
-        raise RuntimeError(f"歌词服务不可用：{type(error).__name__}") from error
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+                payload = json.load(response)
+            break
+        except urllib.error.HTTPError as error:
+            # 404 = 曲库未收录，属于正常结果，不重试
+            if error.code == 404:
+                return []
+            if error.code in (429, 503) and attempt < 2:
+                # 服务端明确要求遵守 Retry-After，再加最多 30% 抖动避免同步重试
+                wait = float(error.headers.get("Retry-After") or (2 if error.code == 429 else 1))
+                time.sleep(wait * (1 + random.random() * 0.3))
+                continue
+            raise RuntimeError(f"歌词服务返回 HTTP {error.code}") from error
+        except Exception as error:  # 网络 / DNS / 超时
+            raise RuntimeError(f"歌词服务不可用：{type(error).__name__}") from error
+    else:  # pragma: no cover
+        return []
 
     if payload.get("instrumental"):
         return []
