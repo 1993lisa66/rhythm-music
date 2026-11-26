@@ -86,11 +86,27 @@ class PlaylistSummary(CamelModel):
 
 class PlaylistDetailOut(PlaylistSummary):
     tracks: list[TrackOut]
+    # 是否是当前登录用户自己的歌单（决定前端是否显示编辑 / 删除入口）
+    owned: bool = False
 
 
 class PlaylistListOut(CamelModel):
     total: int
     items: list[PlaylistSummary]
+
+
+class PlaylistCreateIn(CamelModel):
+    title: str = Field(min_length=1, max_length=60)
+    desc: str = Field(default="", max_length=300)
+
+
+class PlaylistUpdateIn(CamelModel):
+    title: str | None = Field(default=None, min_length=1, max_length=60)
+    desc: str | None = Field(default=None, max_length=300)
+
+
+class PlaylistTracksIn(CamelModel):
+    song_ids: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------- 播放器
