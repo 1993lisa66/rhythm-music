@@ -25,6 +25,10 @@ const library = computed(() => data.library || EMPTY)
 const tab = ref('')
 const activeTab = computed(() => tab.value || library.value.tabs[0] || '歌曲')
 
+/* 列表区标题跟随当前 tab，而不是固定显示「最近添加」 */
+const TAB_TITLES = { 歌曲: '全部歌曲', 歌单: '全部歌单', 专辑: '全部专辑' }
+const listTitle = computed(() => TAB_TITLES[activeTab.value] || library.value.recent.title)
+
 const SORTS = [
   { key: 'default', label: '默认顺序' },
   { key: 'title', label: '按歌名排序' },
@@ -49,6 +53,25 @@ const songRows = computed(() => {
   return rows
 })
 
+/* 歌曲列表分页：默认只渲染 20 首，滚动到底部再追加一页 */
+const PAGE_SIZE = 20
+const visibleCount = ref(PAGE_SIZE)
+const pageSongs = computed(() => songRows.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < songRows.value.length)
+const pageEl = ref(null)
+
+const loadMore = () => {
+  if (!hasMore.value) return
+  visibleCount.value = Math.min(visibleCount.value + PAGE_SIZE, songRows.value.length)
+}
+
+/* 滚动到距底部 200px 时加载下一页；只有歌曲 tab 需要分页 */
+const onScroll = (e) => {
+  if (activeTab.value !== '歌曲' || !hasMore.value) return
+  const el = e.currentTarget
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) loadMore()
+}
+
 const songIds = computed(() => songRows.value.map((s) => s.id))
 const playlistRows = computed(() => library.value.playlists.items)
 /* 专辑视图直接用 /library/albums 的聚合结果，避免前端再猜分组口径 */
@@ -56,7 +79,7 @@ const albumRows = computed(() => data.albums || [])
 
 /* 固定 800px 画布会把长列表截断，按实际行数撑开整个滚动区 */
 const rowCount = computed(() => {
-  if (activeTab.value === '歌曲') return songRows.value.length
+  if (activeTab.value === '歌曲') return pageSongs.value.length
   if (activeTab.value === '歌单') return playlistRows.value.length
   return albumRows.value.length
 })
@@ -75,8 +98,18 @@ const playAlbum = (album) => {
 }
 const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
 
+/* 切换 tab：重置分页并回到顶部，避免停在旧位置立即触发加载 */
+const selectTab = (t) => {
+  if (t === activeTab.value) return
+  tab.value = t
+  visibleCount.value = PAGE_SIZE
+  if (pageEl.value) pageEl.value.scrollTop = 0
+}
+
 const pickSort = (key) => {
   sortKey.value = key
+  visibleCount.value = PAGE_SIZE
+  if (pageEl.value) pageEl.value.scrollTop = 0
   filterOpen.value = false
   const label = SORTS.find((s) => s.key === key)?.label || ''
   toast(`已切换：${label}`)
@@ -92,7 +125,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page">
+  <div class="page" ref="pageEl" @scroll.passive="onScroll">
     <div class="page__canvas" :style="{ height: `${canvasHeight}px` }">
       <h1 class="title">{{ library.title }}</h1>
 
@@ -116,7 +149,7 @@ onMounted(async () => {
           class="tab"
           :class="{ 'tab--on': activeTab === t }"
           :aria-selected="activeTab === t"
-          @click="tab = t"
+          @click="selectTab(t)"
         >
           {{ t }}
         </button>
@@ -129,7 +162,7 @@ onMounted(async () => {
 
       <SectionHeader
         class="sec sec--recent"
-        :title="library.recent.title"
+        :title="listTitle"
         :more="library.recent.more"
         @more="router.push('/recent')"
       />
@@ -137,7 +170,7 @@ onMounted(async () => {
       <div class="card" :style="{ height: `${cardHeight}px` }">
         <template v-if="activeTab === '歌曲'">
           <SongRow
-            v-for="song in songRows"
+            v-for="song in pageSongs"
             :key="song.id"
             :song="song"
             :active="isRowActive(song)"
