@@ -390,3 +390,21 @@ class HealthOut(CamelModel):
     songs: int
     playlists: int
     users: int = 0
+
+
+class SignIn(CamelModel):
+    """换签入参：对象键或完整的旧签名地址都可以，前端不必自己拆 query。"""
+
+    paths: list[str] = []
+
+
+class SignedAsset(CamelModel):
+    key: str
+    url: str
+    expires_at: int
+
+
+class SignOut(CamelModel):
+    items: list[SignedAsset]
+    expires_at: int
+    ttl: int

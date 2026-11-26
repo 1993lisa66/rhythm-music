@@ -19,6 +19,7 @@ from .db import Base, SessionLocal, engine, ensure_columns
 from .errors import ApiError
 from .models import Playlist, Song, User
 from .routers import (
+    assets,
     auth,
     browse,
     downloads,
@@ -81,6 +82,7 @@ for module in (
     recent,
     downloads,
     me,
+    assets,
 ):
     app.include_router(module.router, prefix=config.API_PREFIX)
 

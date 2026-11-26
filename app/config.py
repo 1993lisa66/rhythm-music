@@ -78,6 +78,8 @@ OSS_ASSET_HOST = os.getenv("OSS_ASSET_HOST") or os.getenv("OSS_PUBLIC_BASE", "")
 OSS_URL_TTL = int(os.getenv("OSS_URL_TTL", str(6 * 3600)))
 # 过期时间对齐粒度：同一窗口内签出的地址完全一致，浏览器缓存才能命中
 OSS_URL_ALIGN = int(os.getenv("OSS_URL_ALIGN", "1800"))
+# 换签接口只接受这些前缀的对象键，避免被用来签任意私有对象
+OSS_ALLOWED_PREFIXES = ("covers/", "audio/")
 
 
 def oss_ready() -> bool:
@@ -95,10 +97,15 @@ def oss_host() -> str:
     return f"https://{OSS_BUCKET}.{endpoint}"
 
 
+def oss_expires_at(ttl: int | None = None) -> int:
+    """本次签名的过期时间戳。按 OSS_URL_ALIGN 对齐：同一窗口内签出的地址完全一致。"""
+    ttl = OSS_URL_TTL if ttl is None else ttl
+    return ((int(time.time()) + ttl) // OSS_URL_ALIGN + 1) * OSS_URL_ALIGN
+
+
 def sign_oss_url(key: str, ttl: int | None = None) -> str:
     """给私有对象签一个临时 GET 地址（OSS V1：HMAC-SHA1 + Base64 放在 query 上）。"""
-    ttl = OSS_URL_TTL if ttl is None else ttl
-    expires = ((int(time.time()) + ttl) // OSS_URL_ALIGN + 1) * OSS_URL_ALIGN
+    expires = oss_expires_at(ttl)
     string_to_sign = f"GET\n\n\n{expires}\n/{OSS_BUCKET}/{key.lstrip('/')}"
     signature = base64.b64encode(
         hmac.new(
