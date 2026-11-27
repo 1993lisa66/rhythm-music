@@ -1,0 +1,59 @@
+{
+  "placeholder": "搜索你喜欢的音乐",
+  "cancel": "取消",
+  "hot": {
+    "title": "热门搜索",
+    "refresh": "换一换",
+    "items": [
+      {
+        "text": "蔡小虎",
+        "tone": "primary"
+      },
+      {
+        "text": "韩宝仪",
+        "tone": "sage"
+      },
+      {
+        "text": "对唱",
+        "tone": "honey"
+      },
+      {
+        "text": "酒",
+        "tone": "plum"
+      }
+    ]
+  },
+  "recommend": {
+    "title": "猜你喜欢",
+    "items": [
+      {
+        "id": "mn2451",
+        "title": "风雨无情",
+        "sub": "蔡小虎 · 台语情歌",
+        "cover": "/covers/album-03.jpg",
+        "size": "lg"
+      },
+      {
+        "id": "mn2481",
+        "title": "相逢的酒",
+        "sub": "蔡小虎 / 龙千玉 · 台语对唱",
+        "cover": "/covers/album-10.jpg",
+        "size": "lg"
+      },
+      {
+        "id": "mn2466",
+        "title": "月娘半屏圆",
+        "sub": "",
+        "cover": "/covers/album-02.jpg",
+        "size": "sm"
+      },
+      {
+        "id": "mn2492",
+        "title": "黄昏的故乡",
+        "sub": "",
+        "cover": "/covers/album-07.jpg",
+        "size": "sm"
+      }
+    ]
+  }
+}

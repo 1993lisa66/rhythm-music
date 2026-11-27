@@ -1,0 +1,47 @@
+{
+  "title": "我的",
+  "user": {
+    "name": "阿韵",
+    "id": "ID: 8823 6102",
+    "member": "音乐会员",
+    "avatar": "/covers/avatar.jpg"
+  },
+  "stats": [
+    {
+      "value": "34",
+      "label": "收藏"
+    },
+    {
+      "value": "12",
+      "label": "歌单"
+    },
+    {
+      "value": "26",
+      "label": "关注"
+    },
+    {
+      "value": "100",
+      "label": "首歌"
+    }
+  ],
+  "menu": {
+    "title": "我的音乐",
+    "items": [
+      {
+        "icon": "heart",
+        "name": "我的收藏",
+        "value": "34 首"
+      },
+      {
+        "icon": "clock",
+        "name": "最近播放",
+        "value": "今天 20 首"
+      },
+      {
+        "icon": "playlist",
+        "name": "我的歌单",
+        "value": "12 个"
+      }
+    ]
+  }
+}
