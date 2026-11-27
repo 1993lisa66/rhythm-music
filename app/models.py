@@ -49,6 +49,10 @@ class Song(Base):
     title: Mapped[str] = mapped_column(String(200), index=True)
     artist: Mapped[str] = mapped_column(String(200), index=True)
     album: Mapped[str] = mapped_column(String(200), default="")
+    # 专辑表演者 / 出品方（合集类专辑显式写「戏腔典藏」，留空时回落到 artist）
+    album_artist: Mapped[str] = mapped_column(
+        String(120), default="", server_default=""
+    )
     genre: Mapped[str] = mapped_column(String(64), default="", index=True)
     duration: Mapped[int] = mapped_column(Integer, default=0)
     cover: Mapped[str] = mapped_column(String(300), default="")

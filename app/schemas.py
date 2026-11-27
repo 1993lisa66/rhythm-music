@@ -373,11 +373,27 @@ class AlbumOut(CamelModel):
     song_count: int
     duration: int
     track_ids: list[str]
+    desc: str = ""
+    year: str = ""
 
 
 class AlbumListOut(CamelModel):
     total: int
     items: list[AlbumOut]
+
+
+class AlbumDetailOut(AlbumOut):
+    tracks: list[TrackOut]
+
+
+class ArtistDetailOut(CamelModel):
+    name: str
+    cover: str
+    song_count: int
+    album_count: int
+    duration: int
+    duration_text: str
+    tracks: list[TrackOut]
 
 
 class LibraryPlaylistsOut(CamelModel):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,13 @@ from .. import config
 from ..db import get_db
 from ..deps import get_optional_user, user_id_of
 from ..models import Playlist, Song, User
-from ..schemas import AlbumListOut, DiscoverOut, LibraryOut
+from ..schemas import (
+    AlbumDetailOut,
+    AlbumListOut,
+    ArtistDetailOut,
+    DiscoverOut,
+    LibraryOut,
+)
 from ..services import favorite_ids, get_content, playlist_summary, recent_groups, song_out
 
 router = APIRouter(tags=["browse"])
@@ -127,26 +133,114 @@ def get_library(
     }
 
 
-@router.get("/library/albums", response_model=AlbumListOut, summary="专辑视图（按专辑聚合曲库）")
-def list_albums(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)) -> dict:
+UNKNOWN_ALBUM = "未知专辑"
+
+
+def _album_copy(db: Session) -> dict[str, dict]:
+    """专辑文案（简介 / 年份 / 展示顺序），由 organize_albums.py 写入 content_blocks。"""
+    block = get_content(db, "albums")
+    return {item.get("name", ""): item for item in block.get("items", [])}
+
+
+def _albums(db: Session) -> list[dict]:
+    """按歌曲 album 分组，顺序优先跟随文案，其余按曲目数倒序。"""
+    copy = _album_copy(db)
     songs = db.scalars(select(Song).order_by(Song.added_order)).all()
     grouped: dict[str, dict] = {}
     for song in songs:
-        key = song.album or "未知专辑"
-        bucket = grouped.setdefault(
-            key,
-            {
+        key = song.album or UNKNOWN_ALBUM
+        bucket = grouped.get(key)
+        if bucket is None:
+            bucket = grouped[key] = {
                 "name": key,
-                "artist": song.artist,
+                "artist": song.album_artist or song.artist,
                 "cover": config.asset_url(song.cover),
                 "song_count": 0,
                 "duration": 0,
                 "track_ids": [],
-            },
-        )
+                "desc": copy.get(key, {}).get("desc", ""),
+                "year": copy.get(key, {}).get("year", ""),
+            }
         bucket["song_count"] += 1
         bucket["duration"] += song.duration
         bucket["track_ids"].append(song.id)
 
-    items = list(grouped.values())[:limit]
-    return {"total": len(grouped), "items": items}
+    order = list(copy.keys())
+    return sorted(
+        grouped.values(),
+        key=lambda a: (
+            order.index(a["name"]) if a["name"] in order else len(order),
+            -a["song_count"],
+        ),
+    )
+
+
+@router.get("/library/albums", response_model=AlbumListOut, summary="专辑视图（按专辑聚合曲库）")
+def list_albums(limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db)) -> dict:
+    items = _albums(db)
+    return {"total": len(items), "items": items[:limit]}
+
+
+@router.get(
+    "/library/albums/{name}",
+    response_model=AlbumDetailOut,
+    summary="专辑详情（含曲目）",
+)
+def get_album(
+    name: str,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    album = next((item for item in _albums(db) if item["name"] == name), None)
+    if album is None:
+        raise HTTPException(status_code=404, detail="专辑不存在")
+    liked = favorite_ids(db, user_id_of(user))
+    found = {
+        song.id: song
+        for song in db.scalars(select(Song).where(Song.id.in_(album["track_ids"]))).all()
+    }
+    tracks = []
+    for index, song_id in enumerate(album["track_ids"]):
+        song = found.get(song_id)
+        if song is None:
+            continue
+        row = song_out(song, liked)
+        row["index"] = index
+        tracks.append(row)
+    album["tracks"] = tracks
+    return album
+
+
+@router.get(
+    "/artists/{name}",
+    response_model=ArtistDetailOut,
+    summary="歌手详情（该歌手的全部曲目）",
+)
+def get_artist(
+    name: str,
+    user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    songs = db.scalars(
+        select(Song).where(Song.artist == name).order_by(Song.added_order)
+    ).all()
+    if not songs:
+        raise HTTPException(status_code=404, detail="歌手不存在")
+    liked = favorite_ids(db, user_id_of(user))
+    total = sum(song.duration for song in songs)
+    minutes, seconds = divmod(total, 60)
+    duration_text = (
+        f"{minutes // 60} 小时 {minutes % 60} 分钟" if minutes >= 60 else f"{minutes} 分钟"
+    )
+    return {
+        "name": name,
+        "cover": config.asset_url(songs[0].cover),
+        "song_count": len(songs),
+        "album_count": len({song.album for song in songs if song.album}),
+        "duration": total,
+        "duration_text": duration_text,
+        "tracks": [
+            {**song_out(song, liked), "index": index}
+            for index, song in enumerate(songs)
+        ],
+    }
