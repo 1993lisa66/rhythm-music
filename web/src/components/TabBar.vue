@@ -7,10 +7,10 @@ const route = useRoute()
 const router = useRouter()
 
 const tabs = [
-  { key: 'discover', label: '发现', icon: 'home', to: '/discover', pos: 39 },
-  { key: 'library', label: '乐库', icon: 'library', to: '/library', pos: 109 },
-  { key: 'search', label: '搜索', icon: 'search', to: '/search', pos: 249 },
-  { key: 'profile', label: '我的', icon: 'user', to: '/profile', pos: 319 }
+  { key: 'discover', label: '发现', icon: 'home', to: '/discover' },
+  { key: 'library', label: '乐库', icon: 'library', to: '/library' },
+  { key: 'search', label: '搜索', icon: 'search', to: '/search' },
+  { key: 'profile', label: '我的', icon: 'user', to: '/profile' }
 ]
 
 const isActive = (key) => route.meta.tab === key
@@ -22,12 +22,27 @@ const go = (to) => {
 <template>
   <nav class="tabbar glass" aria-label="主导航">
     <button
-      v-for="t in tabs"
+      v-for="t in tabs.slice(0, 2)"
       :key="t.key"
       type="button"
       class="tab"
       :class="{ 'tab--on': isActive(t.key) }"
-      :style="{ left: `${t.pos}px` }"
+      :aria-current="isActive(t.key) ? 'page' : undefined"
+      @click="go(t.to)"
+    >
+      <Icon :name="t.icon" :size="20" :stroke="1.8" />
+      <span class="tab__label">{{ t.label }}</span>
+    </button>
+
+    <!-- 中间空出来给播放键，两两对称 -->
+    <span class="tabbar__gap" aria-hidden="true"></span>
+
+    <button
+      v-for="t in tabs.slice(2)"
+      :key="t.key"
+      type="button"
+      class="tab"
+      :class="{ 'tab--on': isActive(t.key) }"
       :aria-current="isActive(t.key) ? 'page' : undefined"
       @click="go(t.to)"
     >
@@ -57,19 +72,26 @@ const go = (to) => {
   border-radius: var(--r-tab);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35), var(--shadow-tabbar);
   z-index: 50;
+  /* 五等分：4 个 tab + 中间留给播放键的空档，随宽度自适应而不是写死坐标 */
+  display: flex;
+  align-items: flex-start;
+  padding-top: 12px;
 }
 
 .tab {
-  position: absolute;
-  top: 12px;
-  width: 60px;
-  transform: translateX(-50%);
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   color: var(--placeholder);
   transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.tabbar__gap {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .tab__label {
@@ -88,12 +110,12 @@ const go = (to) => {
 }
 
 .tab:active {
-  transform: translateX(-50%) scale(0.92);
+  transform: scale(0.92);
 }
 
 .play {
   position: absolute;
-  left: 179px;
+  left: 50%;
   top: 4px;
   transform: translateX(-50%);
   width: 54px;

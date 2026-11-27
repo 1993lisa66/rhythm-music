@@ -291,8 +291,8 @@ onMounted(async () => {
 .search {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 132px;
-  width: 342px;
   height: 46px;
   border-radius: 23px;
   background: var(--surface);
@@ -315,12 +315,12 @@ onMounted(async () => {
   top: 206px;
 }
 
-/* 列表卡片 342 × 220 r20 */
+/* 列表卡片：左右各留 24，随屏宽自适应 */
 .card {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 242px;
-  width: 342px;
   height: 220px;
   border-radius: var(--r-card);
   background: var(--surface);

@@ -382,10 +382,11 @@ const onKey = (e) => {
   z-index: 1;
 }
 
-/* 封面背后的暖色光晕 */
+/* 封面背后的暖色光晕：居中，不随屏宽拉伸 */
 .glow {
   position: absolute;
-  left: 24px;
+  left: 50%;
+  margin-left: -171px;
   top: 60px;
   width: 342px;
   height: 342px;
@@ -397,7 +398,8 @@ const onKey = (e) => {
 
 .cover {
   position: absolute;
-  left: 48px;
+  left: 50%;
+  margin-left: -147px;
   top: 90px;
   width: 294px;
   height: 294px;
@@ -477,8 +479,8 @@ const onKey = (e) => {
 .bar {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 496px;
-  width: 342px;
   height: 20px;
   display: flex;
   align-items: center;
@@ -621,8 +623,8 @@ const onKey = (e) => {
 .lyrics {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 654px;
-  width: 342px;
   height: 86px;
   border-radius: var(--r-card);
   background: rgba(255, 255, 255, 0.08);
@@ -701,5 +703,19 @@ const onKey = (e) => {
 
 .tool--on {
   color: var(--primary);
+}
+
+/* 控制条改成等分排布：390 宽的坐标在 430/360 屏上会偏，交给 flex 自己算 */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+}
+
+.ctrl {
+  position: relative;
+  left: auto;
+  top: auto;
 }
 </style>

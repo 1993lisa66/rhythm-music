@@ -162,12 +162,12 @@ onMounted(async () => {
   color: var(--ink);
 }
 
-/* 搜索框：342 × 48 r24 */
+/* 搜索框：左右各留 24，随屏宽自适应 */
 .search {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 108px;
-  width: 342px;
   height: 48px;
   border-radius: var(--r-btn);
   background: var(--surface);
@@ -207,12 +207,12 @@ onMounted(async () => {
   top: 540px;
 }
 
-/* 精选封面：342 × 176 r20 */
+/* 精选封面：342 × 176 r20（宽度跟随屏幕） */
 .featured {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 224px;
-  width: 342px;
   height: 176px;
   border-radius: var(--r-card);
   overflow: hidden;
@@ -262,30 +262,38 @@ onMounted(async () => {
   letter-spacing: 0.2px;
   text-shadow: 0 1px 8px rgba(43, 31, 26, 0.18);
   z-index: 1;
+  /* 标题最长两行，超出省略；避免长标题往下压住「13 首」那行 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .featured__info {
   position: absolute;
   left: 16px;
   right: 16px;
-  top: 116px;
+  /* 钉在卡片底部，标题一行/两行都不会重叠 */
+  bottom: 12px;
   font-size: 12px;
   line-height: 16px;
   color: rgba(255, 243, 224, 0.92);
   z-index: 1;
 }
 
-/* 随心听：3 × 104×80 */
+/* 随心听：等分三列，窄屏不会溢出右边 */
 .moods {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 450px;
   display: flex;
   gap: 14px;
 }
 
 .mood {
-  width: 104px;
+  flex: 1 1 0;
+  min-width: 0;
   height: 80px;
   border-radius: var(--r-card);
   color: #fff;

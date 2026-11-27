@@ -52,7 +52,8 @@
   --font-num: "Inter", "SF Pro Text", ui-sans-serif, system-ui, sans-serif;
 
   /* ---------- 版面 ---------- */
-  --sb-h: 44px;
+  /* 页面顶部不再预留模拟状态栏的高度，内容直接贴顶 */
+  --sb-h: 0px;
   --gutter: 24px;
   --nav-b: 12px;
   --nav-h: 62px;

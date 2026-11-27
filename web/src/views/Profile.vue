@@ -175,12 +175,12 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-/* 统计卡片 342 × 76 r20 */
+/* 统计卡片：左右各留 24，随屏宽自适应 */
 .stats {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 184px;
-  width: 342px;
   height: 76px;
   border-radius: var(--r-card);
   background: var(--surface);
@@ -223,12 +223,12 @@ onMounted(async () => {
   color: var(--ink);
 }
 
-/* 功能菜单 342 × 224 r20 */
+/* 功能菜单：左右各留 24，随屏宽自适应 */
 .menu {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 324px;
-  width: 342px;
   /* 高度跟随菜单条目数，条目变少时不留大片空白 */
   height: auto;
   border-radius: var(--r-card);

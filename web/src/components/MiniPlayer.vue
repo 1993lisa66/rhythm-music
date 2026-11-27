@@ -57,7 +57,7 @@ const open = () => router.push('/now')
 }
 
 .mini--compact {
-  bottom: 16px;
+  bottom: calc(16px + var(--sab, 0px));
   padding-left: 20px;
 }
 

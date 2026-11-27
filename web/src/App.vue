@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import StatusBar from './components/StatusBar.vue'
 import TabBar from './components/TabBar.vue'
 import MiniPlayer from './components/MiniPlayer.vue'
 import Toast from './components/Toast.vue'
@@ -48,8 +47,6 @@ onUnmounted(() => {
 <template>
   <div class="app-shell">
     <div class="device" :class="{ 'device--dark': immersive }">
-      <StatusBar :light="immersive" />
-
       <router-view v-slot="{ Component }">
         <transition name="page-fade" mode="out-in">
           <component :is="Component" />
