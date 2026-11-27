@@ -41,6 +41,7 @@ const back = () => goBack(router, '/discover')
 const actions = computed(() => [
   { key: 'like', label: liked.value ? '取消收藏' : '收藏歌曲', icon: 'heart', active: liked.value },
   { key: 'add-to-playlist', label: '添加到歌单', icon: 'plus' },
+  { key: 'lyrics', label: '查看歌词', icon: 'quote' },
   { key: 'queue', label: '播放队列', icon: 'queue' },
   { key: 'artist', label: '查看歌手', icon: 'mic' },
   { key: 'album', label: '查看专辑', icon: 'note' },
@@ -114,6 +115,8 @@ const onPick = async (key) => {
     if (current.value.artist) {
       router.push(`/artist/${encodeURIComponent(current.value.artist)}`)
     }
+  } else if (key === 'lyrics') {
+    openLyrics()
   } else if (key === 'album') {
     if (current.value.album) router.push(`/album/${encodeURIComponent(current.value.album)}`)
     else router.push({ path: '/search', query: { q: current.value.title } })
@@ -194,7 +197,14 @@ const onKey = (e) => {
       </button>
 
       <span class="glow" aria-hidden="true"></span>
-      <div class="cover" :style="coverStyle(current.cover)"></div>
+      <!-- 点封面直接进歌词页，符合「看图看词」的手势直觉 -->
+      <button
+        type="button"
+        class="cover"
+        :style="coverStyle(current.cover)"
+        aria-label="查看歌词"
+        @click="openLyrics"
+      ></button>
 
       <h1 class="song">{{ current.title }}</h1>
       <p class="artist">{{ current.artist }} · {{ current.album }}</p>
@@ -391,6 +401,9 @@ const onKey = (e) => {
   top: 90px;
   width: 294px;
   height: 294px;
+  padding: 0;
+  border: 0;
+  display: block;
   border-radius: 28px;
   background-color: #3a2b23;
   box-shadow: 0 16px 40px rgba(255, 125, 85, 0.3);

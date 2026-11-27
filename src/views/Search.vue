@@ -58,6 +58,7 @@ async function runSearch(keyword) {
     results.value = payload.songs || []
     artists.value = payload.artists || []
     playlists.value = payload.playlists || []
+    if (results.value.length || artists.value.length || playlists.value.length) pushHistory(keyword)
     // 关键词写进地址栏：刷新 / 返回都能还原这次搜索结果
     router.replace({ query: { q: keyword } })
   } catch {
@@ -69,6 +70,38 @@ async function runSearch(keyword) {
   } finally {
     if (mine === seq) searching.value = false
   }
+}
+
+/* 搜索历史：本地存最近 8 条，点一下就能重搜 */
+const HISTORY_KEY = 'rhythm.searchHistory'
+const history = ref([])
+const readHistory = () => {
+  try {
+    history.value = JSON.parse(window.localStorage.getItem(HISTORY_KEY) || '[]').slice(0, 8)
+  } catch {
+    history.value = []
+  }
+}
+const pushHistory = (word) => {
+  const next = [word, ...history.value.filter((w) => w !== word)].slice(0, 8)
+  history.value = next
+  try {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(next))
+  } catch {
+    /* 隐私模式下写不进去也不影响搜索 */
+  }
+}
+const clearHistory = () => {
+  history.value = []
+  try {
+    window.localStorage.removeItem(HISTORY_KEY)
+  } catch {
+    /* 忽略 */
+  }
+}
+const useHistory = (word) => {
+  query.value = word
+  inputRef.value?.focus()
 }
 
 const hasQuery = computed(() => query.value.trim().length > 0)
@@ -102,6 +135,7 @@ const openArtist = (name) => router.push(`/artist/${encodeURIComponent(name)}`)
 const openPlaylist = (id) => router.push(`/playlist/${id}`)
 
 onMounted(async () => {
+  readHistory()
   // 带 q 的深链直接出结果，否则刷新/分享进来会停在空态
   const initial = (route.query.q || '').toString().trim()
   if (initial) runSearch(initial)
@@ -162,6 +196,24 @@ watch(
 
       <template v-if="!hasQuery">
         <div class="browse">
+          <div v-if="history.length" class="history">
+            <div class="sec">
+              <h2 class="sec__title">搜索历史</h2>
+              <button type="button" class="sec__more" @click="clearHistory">清空</button>
+            </div>
+            <div class="hchips">
+              <button
+                v-for="word in history"
+                :key="word"
+                type="button"
+                class="hchip"
+                @click="useHistory(word)"
+              >
+                {{ word }}
+              </button>
+            </div>
+          </div>
+
           <div class="sec sec--hot">
             <h2 class="sec__title">{{ hot.title }}</h2>
             <button type="button" class="sec__more" @click="rotateHot">{{ hot.refresh }}</button>
@@ -387,6 +439,48 @@ watch(
   line-height: 18px;
   color: var(--primary);
   padding: 4px 0 4px 10px;
+}
+
+/* 搜索历史：与热搜区分开，用浅色描边胶囊 */
+.history {
+  margin-bottom: 24px;
+}
+
+.history .sec {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
+.hchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hchip {
+  height: 32px;
+  max-width: 100%;
+  padding: 0 14px;
+  border-radius: var(--r-chip);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 13px;
+  color: var(--ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: color 0.16s ease, transform 0.16s ease;
+}
+
+.hchip:hover {
+  color: var(--primary);
+}
+
+.hchip:active {
+  transform: scale(0.96);
 }
 
 /* 热搜 Chip：36 高 r18，自动换行 */
