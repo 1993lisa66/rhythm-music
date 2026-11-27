@@ -6,15 +6,15 @@ import { api } from '@/api/client'
 import { data, refreshFavorites } from '@/store/data'
 import { current, playSong, state, syncLiked } from '@/store/player'
 import { toast } from '@/store/toast'
-import { coverStyle, fmtTime } from '@/utils/format'
+import { coverStyle, fmtSpan, fmtTime } from '@/utils/format'
 
 const list = computed(() => data.favorites?.items || [])
 const ids = computed(() => list.value.map((s) => s.id))
 const total = computed(() => list.value.length)
 
-const hoursText = computed(() => {
+const spanText = computed(() => {
   const seconds = list.value.reduce((sum, s) => sum + (Number(s.duration) || 0), 0)
-  return (seconds / 3600).toFixed(1)
+  return fmtSpan(seconds)
 })
 
 const play = (song) => playSong(song.id, ids.value)
@@ -58,7 +58,7 @@ onMounted(async () => {
         </span>
         <span class="summary__text">
           <span class="summary__title num">共 {{ total }} 首</span>
-          <span class="summary__sub num">约 {{ hoursText }} 小时 · 点此全部播放</span>
+          <span class="summary__sub num">{{ spanText }} · 点此全部播放</span>
         </span>
         <span class="summary__play">
           <Icon name="play" :size="15" />
