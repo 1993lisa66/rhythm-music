@@ -192,9 +192,12 @@ users ──< playlists ──< playlist_tracks >── songs ──< lyric_line
 
 ## 部署
 
+线上示例：<https://music.zhanglei928.com>（HTTPS，证书由 Let's Encrypt 自动签发与续签）
+
 1. `npm run build` 产出 `web/dist`，交给 Nginx 作为站点根目录（`try_files $uri $uri/ /index.html` 兜底 SPA 路由）
 2. `location /api/` 反代到 `127.0.0.1:8000`，`/covers/` 直接 alias 到封面目录并加缓存
 3. 后端以 `uvicorn app.main:app --host 127.0.0.1 --port 8000` 常驻，`.env` 配置 JWT 密钥、API 前缀等
+4. 80 端口 301 跳 443，`/.well-known/acme-challenge/` 单独放行以便自动续签；IP 直连仍保留 HTTP 入口
 
 生产环境建议把 `RHYTHM_AUTO_SEED` 关掉，避免清空曲库后重启又被灌回示例数据。
 
