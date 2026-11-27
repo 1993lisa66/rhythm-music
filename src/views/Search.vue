@@ -139,12 +139,12 @@ watch(
       <button type="button" class="cancel" @click="cancel">{{ hot.cancel }}</button>
 
       <template v-if="!hasQuery">
-        <div class="sec sec--hot">
-          <h2 class="sec__title">{{ hot.title }}</h2>
-          <button type="button" class="sec__more" @click="rotateHot">{{ hot.refresh }}</button>
-        </div>
+        <div class="browse">
+          <div class="sec sec--hot">
+            <h2 class="sec__title">{{ hot.title }}</h2>
+            <button type="button" class="sec__more" @click="rotateHot">{{ hot.refresh }}</button>
+          </div>
 
-        <div class="chips-wrap">
           <div class="chips">
             <button
               v-for="item in hotItems"
@@ -157,37 +157,37 @@ watch(
               {{ item.text }}
             </button>
           </div>
-        </div>
 
-        <h2 class="sec sec--rec">{{ recommend.title }}</h2>
+          <h2 class="sec sec--rec">{{ recommend.title }}</h2>
 
-        <div class="rec">
-          <div class="rec__row rec__row--lg">
-            <button
-              v-for="item in bigCards"
-              :key="item.id"
-              type="button"
-              class="rcard"
-              @click="playRecommend(item)"
-            >
-              <span class="rcard__cover rcard__cover--lg" :style="coverStyle(item.cover)"></span>
-              <span class="rcard__title">{{ item.title }}</span>
-              <span class="rcard__sub">{{ item.sub }}</span>
-            </button>
-          </div>
+          <div class="rec">
+            <div class="rec__row rec__row--lg">
+              <button
+                v-for="item in bigCards"
+                :key="item.id"
+                type="button"
+                class="rcard"
+                @click="playRecommend(item)"
+              >
+                <span class="rcard__cover rcard__cover--lg" :style="coverStyle(item.cover)"></span>
+                <span class="rcard__title">{{ item.title }}</span>
+                <span class="rcard__sub">{{ item.sub }}</span>
+              </button>
+            </div>
 
-          <div class="rec__row rec__row--sm">
-            <button
-              v-for="item in smallCards"
-              :key="item.id"
-              type="button"
-              class="rcard"
-              @click="playRecommend(item)"
-            >
-              <span class="rcard__cover rcard__cover--sm" :style="coverStyle(item.cover)"></span>
-              <span class="rcard__title">{{ item.title }}</span>
-              <span v-if="item.sub" class="rcard__sub">{{ item.sub }}</span>
-            </button>
+            <div class="rec__row rec__row--sm">
+              <button
+                v-for="item in smallCards"
+                :key="item.id"
+                type="button"
+                class="rcard"
+                @click="playRecommend(item)"
+              >
+                <span class="rcard__cover rcard__cover--sm" :style="coverStyle(item.cover)"></span>
+                <span class="rcard__title">{{ item.title }}</span>
+                <span v-if="item.sub" class="rcard__sub">{{ item.sub }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </template>
@@ -285,12 +285,24 @@ watch(
   height: 24px;
 }
 
-.sec--hot {
+/* 浏览态整块从搜索框下方开始，内部用文档流依次排列，热搜换行时下方自动跟随 */
+.browse {
+  position: absolute;
+  left: 24px;
+  right: 24px;
   top: 114px;
 }
 
+.sec--hot,
 .sec--rec {
-  top: 272px;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
+.sec--rec {
+  margin-top: 26px;
 }
 
 .sec__title {
@@ -307,49 +319,12 @@ watch(
   padding: 4px 0 4px 10px;
 }
 
-/* 热搜 Chip：36 高 r18 */
-/* 外层定位 + 右侧渐隐，让被裁切的热搜词看起来是「可滑动」而非溢出错位 */
-.chips-wrap {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 154px;
-  height: 36px;
-  pointer-events: none;
-}
-
-.chips-wrap::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 40px;
-  background: linear-gradient(to right, transparent, var(--bg-canvas, #fffdf8));
-  pointer-events: none;
-}
-
+/* 热搜 Chip：36 高 r18，自动换行 */
 .chips {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 0;
-  height: 36px;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  pointer-events: auto;
-}
-
-.chips::-webkit-scrollbar {
-  height: 0;
-}
-
-.chips .chip {
-  flex: 0 0 auto;
+  margin-top: 16px;
 }
 
 .chip {
@@ -373,10 +348,7 @@ watch(
 
 /* 猜你喜欢 */
 .rec {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 312px;
+  margin-top: 16px;
 }
 
 .rec__row {
@@ -398,10 +370,7 @@ watch(
 }
 
 .rec__row--sm {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 200px;
+  margin-top: 16px;
 }
 
 .rcard {
