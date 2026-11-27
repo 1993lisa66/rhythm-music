@@ -323,6 +323,12 @@ def main() -> int:
         fill_user_state(db, songs, args.dry_run)
 
     print(f"完成：补封面 {covers} 张，歌单曲目 {tracks} 条，文案块已更新")
+
+    # 封面同样是双写（OSS + 服务器 static）：本机跑完让服务器那份也补齐
+    if not args.dry_run:
+        from sync_server_assets import auto_sync
+
+        auto_sync()
     return 0
 
 

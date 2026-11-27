@@ -97,10 +97,38 @@ def remote_size(key: str) -> int | None:
     raise SystemExit(f"HEAD {key} 失败：HTTP {status}")
 
 
-def upload(key: str, data: bytes, content_type: str) -> None:
+def upload(key: str, data: bytes, content_type: str, local_copy: bool = True) -> None:
+    """上传到 OSS，并同步写一份到本地 static/ 目录（数据源=服务器资源时读这份）。
+
+    两边保存是这条链路的前提：只传 OSS 的话，切到「服务器资源」会找不到文件；
+    只写本地的话，OSS 模式又会 404。
+    """
     status, _ = _request("PUT", key, body=data, content_type=content_type)
     if status != 200:
         raise SystemExit(f"PUT {key} 失败：HTTP {status}")
+    if local_copy:
+        save_local(key, data)
+
+
+def local_path_for(key: str) -> Path | None:
+    """对象键 → 本地静态文件路径；只放行 audio/ 与 covers/ 前缀。"""
+    normalized = key.strip("/")
+    if not normalized.startswith(("audio/", "covers/")):
+        return None
+    root = config.STATIC_DIR.resolve()
+    candidate = (root / normalized).resolve()
+    if candidate == root or root not in candidate.parents:
+        return None
+    return candidate
+
+
+def save_local(key: str, data: bytes) -> Path | None:
+    target = local_path_for(key)
+    if target is None:
+        return None
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
+    return target
 
 
 def collect(source: Path, name: str | None) -> list[tuple[str, Path]]:
@@ -123,6 +151,11 @@ def main() -> int:
     parser.add_argument("--name", default=None, help="单文件上传时的对象名（默认用源文件名）")
     parser.add_argument("--dry-run", action="store_true", help="只打印计划，不实际上传")
     parser.add_argument("--force", action="store_true", help="忽略远端大小，全部重传")
+    parser.add_argument(
+        "--push-server",
+        action="store_true",
+        help="上传后把服务器本地静态目录也补齐（双写另一侧）",
+    )
     args = parser.parse_args()
 
     if not config.oss_ready():
@@ -151,21 +184,38 @@ def main() -> int:
         key = f"{prefix}/{object_name}" if prefix else object_name
         data = path.read_bytes()
         size = len(data)
+        target = local_path_for(key)
+        same_file = (
+            target is not None and target.exists() and target.resolve() == path.resolve()
+        )
+        local_ready = same_file or (
+            target is not None and target.exists() and target.stat().st_size == size
+        )
         exists = None if args.force else remote_size(key)
-        if exists == size:
+        if exists == size and local_ready:
             skipped += 1
-            print(f"跳过  {key}（远端已有，{size} 字节）")
+            print(f"跳过  {key}（OSS 与本地均已有，{size} 字节）")
             continue
         if args.dry_run:
-            print(f"待传  {key}（{size} 字节）")
+            print(f"待传  {key}（{size} 字节，OSS + 本地{'' if target else '（无本地副本）'}）")
             continue
-        upload(key, data, CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream"))
+        upload(
+            key,
+            data,
+            CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream"),
+            local_copy=not same_file,
+        )
         uploaded += 1
-        print(f"上传  {key}（{size} 字节）")
+        print(f"上传  {key}（{size} 字节，已同步到本地）")
 
     print(f"\n完成：上传 {uploaded}，跳过 {skipped}，共 {len(files)} 个文件")
     first_key = f"{prefix}/{files[0][0]}" if prefix else files[0][0]
     print(f"签名地址示例（{config.OSS_URL_TTL}s 有效）：{config.sign_oss_url(first_key)}")
+
+    if args.push_server and not args.dry_run and uploaded:
+        from sync_server_assets import auto_sync
+
+        auto_sync()
     return 0
 
 

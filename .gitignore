@@ -9,3 +9,6 @@ __pycache__/
 .env
 .DS_Store
 .pytest_cache/
+
+# 音频资源体积大（1GB+），只放 OSS 与服务器 static，不进版本库
+static/audio/

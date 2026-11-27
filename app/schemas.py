@@ -45,6 +45,8 @@ class SongDeleteOut(CamelModel):
     song_id: str
     # 成功删除的 OSS 对象数（音频 + 封面，0~2）
     assets_removed: int = 0
+    # 成功删除的服务器本地静态文件数（与 OSS 同键，0~2）
+    local_assets_removed: int = 0
 
 
 class GenreOut(CamelModel):

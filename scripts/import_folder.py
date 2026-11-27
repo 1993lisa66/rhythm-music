@@ -235,6 +235,12 @@ def main() -> int:
                 )
 
     print(f"\n完成：新增 {len(plans)} 首，歌词 {total_lines} 行")
+
+    # 资源是双写（OSS + 服务器 static）：本机导入后让服务器那份也补齐
+    if not args.dry_run:
+        from sync_server_assets import auto_sync
+
+        auto_sync()
     return 0
 
 

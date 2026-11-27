@@ -115,11 +115,32 @@ def list_objects(prefix: str) -> list[str]:
     return keys
 
 
+def local_path_for(key: str) -> Path | None:
+    """对象键 → 本地静态文件路径；只放行 audio/ 与 covers/ 前缀。"""
+    normalized = (key or "").strip().lstrip("/")
+    if not normalized.startswith(("audio/", "covers/")):
+        return None
+    root = config.STATIC_DIR.resolve()
+    candidate = (root / normalized).resolve()
+    if candidate == root or root not in candidate.parents:
+        return None
+    return candidate
+
+
 def delete_object(key: str) -> tuple[str, bool, str]:
+    """删 OSS 对象，同时删本地同名静态文件（两边一起清）。"""
     status, body = _call("DELETE", key)
+    path = local_path_for(key)
+    local_note = ""
+    if path is not None and path.is_file():
+        try:
+            path.unlink()
+            local_note = " + 本地已删"
+        except OSError as error:
+            local_note = f" 本地删除失败：{error}"
     if status in (200, 204):
-        return key, True, ""
-    return key, False, f"HTTP {status} {body[:120]!r}"
+        return key, True, local_note
+    return key, False, f"HTTP {status} {body[:120]!r}{local_note}"
 
 
 def parse_db_path() -> Path:

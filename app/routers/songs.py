@@ -24,6 +24,7 @@ from ..models import (
 from ..schemas import GenreListOut, LyricsOut, SongDeleteOut, SongListOut, SongOut
 from ..services import (
     clamp,
+    delete_local_object,
     delete_oss_object,
     favorite_ids,
     get_player,
@@ -110,8 +111,9 @@ def delete_song(
     """从曲库彻底删除一首歌。
 
     先清掉关联数据（歌单曲目 / 收藏 / 播放记录 / 队列 / 歌词），
-    再删 OSS 上的音频与封面对象。资源删除是 best-effort：
-    OSS 未配置或请求失败不会回滚曲库记录的移除。
+    再删 OSS 对象与服务器本地静态文件（音频 + 封面，两边同时删）。
+    资源删除是 best-effort：OSS 未配置或请求失败不会回滚曲库记录的移除；
+    若同一份资源还被其它歌曲引用，则跳过删除，避免误删共享文件。
     """
     song = get_song(db, song_id)
     keys = [key for key in (oss_object_key(song.audio), oss_object_key(song.cover)) if key]
@@ -147,8 +149,24 @@ def delete_song(
     db.delete(song)
     db.commit()
 
-    assets_removed = sum(1 for key in keys if delete_oss_object(key))
-    return {"deleted": True, "song_id": song_id, "assets_removed": assets_removed}
+    # 其它歌曲可能共用同一份封面/音频：仍被引用的键不删，避免连带清掉别人的资源
+    shared: set[str] = set()
+    if keys:
+        for audio, cover in db.execute(select(Song.audio, Song.cover)).all():
+            for value in (audio, cover):
+                key = oss_object_key(value)
+                if key in keys:
+                    shared.add(key)
+    targets = [key for key in keys if key not in shared]
+
+    oss_removed = sum(1 for key in targets if delete_oss_object(key))
+    local_removed = sum(1 for key in targets if delete_local_object(key))
+    return {
+        "deleted": True,
+        "song_id": song_id,
+        "assets_removed": oss_removed,
+        "local_assets_removed": local_removed,
+    }
 
 
 @router.get("/songs/{song_id}/lyrics", response_model=LyricsOut, summary="歌词（时间轴）")

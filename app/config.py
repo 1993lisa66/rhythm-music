@@ -32,6 +32,7 @@ _load_dotenv()
 SEED_DIR = BASE_DIR / "data" / "seed"
 STATIC_DIR = BASE_DIR / "static"
 COVER_DIR = STATIC_DIR / "covers"
+AUDIO_DIR = STATIC_DIR / "audio"
 
 APP_NAME = "韵律音乐 App API"
 VERSION = "1.0.0"

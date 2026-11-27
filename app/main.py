@@ -111,6 +111,10 @@ for module in (
 if config.COVER_DIR.exists():
     app.mount("/covers", StaticFiles(directory=config.COVER_DIR), name="covers")
 
+# 音频同理：生产由 Nginx 直读 static/audio，这里兜底本地开发与静态目录直连
+if config.AUDIO_DIR.exists():
+    app.mount("/audio", StaticFiles(directory=config.AUDIO_DIR), name="audio")
+
 
 @app.get("/health", response_model=HealthOut, tags=["meta"], summary="健康检查")
 def health() -> dict:

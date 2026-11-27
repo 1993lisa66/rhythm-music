@@ -11,6 +11,7 @@ import random
 import urllib.error
 import urllib.request
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlparse
 
 from sqlalchemy import delete, func, or_, select
@@ -74,6 +75,51 @@ def delete_oss_object(key: str) -> bool:
         with urllib.request.urlopen(request, timeout=8) as response:
             return 200 <= response.status < 300
     except (urllib.error.URLError, OSError, ValueError):
+        return False
+
+
+# 允许落盘 / 删除的静态资源前缀；其它键（文案、种子文件等）一律不碰
+LOCAL_ASSET_PREFIXES = ("audio/", "covers/")
+
+
+def local_object_path(key: str) -> Path | None:
+    """对象键 → 服务器本地静态文件路径。
+
+    只放行 audio/ 与 covers/ 两个前缀，并且必须落在 STATIC_DIR 内，
+    避免 ../ 之类的键删到项目外的文件。
+    """
+    normalized = oss_object_key(key)
+    if not normalized.startswith(LOCAL_ASSET_PREFIXES):
+        return None
+    root = config.STATIC_DIR.resolve()
+    candidate = (root / normalized).resolve()
+    if candidate == root or root not in candidate.parents:
+        return None
+    return candidate
+
+
+def delete_local_object(key: str) -> bool:
+    """删除服务器本地静态文件（与 OSS 对象同键）。失败返回 False。"""
+    path = local_object_path(key)
+    if path is None or not path.is_file():
+        return False
+    try:
+        path.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def save_local_object(key: str, data: bytes) -> bool:
+    """把资源写进服务器本地静态目录（与 OSS 对象同键），上传时两边同时保存。"""
+    path = local_object_path(key)
+    if path is None:
+        return False
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        return True
+    except OSError:
         return False
 
 
