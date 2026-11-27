@@ -29,6 +29,10 @@ const activeTab = computed(() => tab.value || library.value.tabs[0] || '歌曲')
 const TAB_TITLES = { 歌曲: '全部歌曲', 歌单: '全部歌单', 专辑: '全部专辑' }
 const listTitle = computed(() => TAB_TITLES[activeTab.value] || library.value.recent.title)
 
+/* 「全部 ›」按当前 tab 分流：歌曲 → 最近添加、歌单 → 我的歌单、专辑 → 全部专辑 */
+const MORE_ROUTES = { 歌曲: '/recent', 歌单: '/mylists', 专辑: '/albums' }
+const openMore = () => router.push(MORE_ROUTES[activeTab.value] || '/recent')
+
 const SORTS = [
   { key: 'default', label: '默认顺序' },
   { key: 'title', label: '按歌名排序' },
@@ -166,7 +170,7 @@ onMounted(async () => {
         class="sec sec--recent"
         :title="listTitle"
         :more="library.recent.more"
-        @more="router.push('/recent')"
+        @more="openMore"
       />
 
       <div class="card" :style="{ height: `${cardHeight}px` }">
