@@ -101,14 +101,14 @@ def get_library(
     playlists_copy = content.get("playlists", {})
     wanted = playlists_copy.get("ids", [])
     owned = _owned_playlists(db, user_id_of(user))
-    # 优先按文案里的顺序取（private / commute），不足时用其余歌单补齐
+    # 先按文案里的顺序排（private / commute 等），其余歌单全部追加，避免列表被截断
     picked: list[Playlist] = []
     for template_id in wanted:
         match = next((p for p in owned if p.id.endswith(f"-{template_id}")), None)
-        if match is not None:
+        if match is not None and match not in picked:
             picked.append(match)
     for playlist in owned:
-        if playlist not in picked and len(picked) < max(len(wanted), 2):
+        if playlist not in picked:
             picked.append(playlist)
 
     return {
