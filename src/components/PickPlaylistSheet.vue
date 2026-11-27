@@ -53,16 +53,25 @@ const loadContains = async () => {
   contains.value = Object.fromEntries(entries)
 }
 
-const addTo = async (playlist) => {
+/* 点已加入的歌单可执行移除，做到可加可取消 */
+const toggle = async (playlist) => {
   if (!props.songId || adding.value) return
+  const wasIncluded = !!contains.value[playlist.id]
   adding.value = playlist.id
   try {
-    await api.addPlaylistTracks(playlist.id, [props.songId])
-    contains.value = { ...contains.value, [playlist.id]: true }
-    toast(`已加入《${playlist.title}》`)
+    if (wasIncluded) {
+      await api.removePlaylistTrack(playlist.id, props.songId)
+      playlist.trackCount = Math.max(0, (playlist.trackCount || 1) - 1)
+      toast(`已从《${playlist.title}》移除`)
+    } else {
+      await api.addPlaylistTracks(playlist.id, [props.songId])
+      playlist.trackCount = (playlist.trackCount || 0) + 1
+      toast(`已加入《${playlist.title}》`)
+    }
+    contains.value = { ...contains.value, [playlist.id]: !wasIncluded }
     emit('added')
   } catch (error) {
-    toast(error?.message || '添加失败')
+    toast(error?.message || (wasIncluded ? '移除失败' : '添加失败'))
   } finally {
     adding.value = ''
   }
@@ -85,17 +94,19 @@ const addTo = async (playlist) => {
               <button
                 type="button"
                 class="row"
-                :disabled="contains[playlist.id] || adding === playlist.id"
-                @click="addTo(playlist)"
+                :class="{ 'row--in': contains[playlist.id] }"
+                :disabled="adding === playlist.id"
+                :aria-label="contains[playlist.id] ? `从${playlist.title}移除` : `加入${playlist.title}`"
+                @click="toggle(playlist)"
               >
                 <span class="row__cover" :style="coverStyle(playlist.cover)"></span>
                 <span class="row__text">
                   <span class="row__title">{{ playlist.title }}</span>
-                  <span class="row__sub">{{ playlist.trackCount || 0 }} 首歌曲</span>
+                  <span class="row__sub">{{ playlist.trackCount || 0 }} 首歌曲 · {{ contains[playlist.id] ? '点按移除' : '点按添加' }}</span>
                 </span>
                 <span class="row__act">
-                  <Icon v-if="contains[playlist.id]" name="check" :size="15" :stroke="2.4" />
-                  <Icon v-else-if="adding === playlist.id" name="refresh" :size="14" />
+                  <Icon v-if="adding === playlist.id" name="refresh" :size="14" />
+                  <Icon v-else-if="contains[playlist.id]" name="close" :size="15" :stroke="2.4" />
                   <Icon v-else name="plus" :size="16" :stroke="2.1" />
                 </span>
               </button>
@@ -239,6 +250,11 @@ const addTo = async (playlist) => {
   place-items: center;
   color: var(--primary);
   background: rgba(224, 120, 86, 0.1);
+}
+
+.row--in .row__act {
+  background: rgba(43, 31, 26, 0.06);
+  color: var(--ink-sub);
 }
 
 .row:disabled .row__act {
