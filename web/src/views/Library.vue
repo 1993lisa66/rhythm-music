@@ -89,8 +89,8 @@ const rowCount = computed(() => {
 })
 /* 卡片高度跟随实际行数（60 一行 + 上下 7px 内边距），不预留空白 */
 const cardHeight = computed(() => Math.max(74, rowCount.value * 60 + 14))
-/* 每个 tab 只留一套列表，画布高度按卡片实际高度撑开 */
-const canvasHeight = computed(() => Math.max(800, 242 + cardHeight.value + 150))
+/* 画布高度按卡片实际高度撑开；底部留白交给 base.css 的 .page::after 统一处理 */
+const canvasHeight = computed(() => Math.max(800, 242 + cardHeight.value))
 
 const isRowActive = (song) => current.value.id === song.id && state.playing
 

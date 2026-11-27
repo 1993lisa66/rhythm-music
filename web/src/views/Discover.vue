@@ -50,8 +50,8 @@ const playRecent = (song) => playSong(song.id, recentIds.value)
 const moodCount = (mood) => moodSongs(mood).length
 
 /* 画布原本固定 800px，绝对定位的行列表再长也撑不开滚动区；按行数撑高
-   卡片上下各 7px 内边距 + 每行 60px（与音乐库列表一致） */
-const canvasHeight = computed(() => Math.max(800, 576 + 14 + recent.value.length * 60 + 160))
+   卡片上下各 7px 内边距 + 每行 60px（与音乐库列表一致），底部留白由 .page::after 统一给 */
+const canvasHeight = computed(() => Math.max(800, 576 + 14 + recent.value.length * 60))
 
 onMounted(async () => {
   try {

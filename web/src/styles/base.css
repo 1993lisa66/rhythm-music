@@ -111,8 +111,7 @@ ul {
 }
 
 /* ---------- 页面滚动容器 ----------
-   top 让出状态栏 44px，底部由悬浮组件覆盖，
-   canvas 高度 = 844 - 44 = 800，坐标 = 设计稿 y - 44
+   内容贴顶（--sb-h 默认 0），底部由悬浮播放条 + tab 导航覆盖
    ------------------------------------ */
 .page {
   position: absolute;
@@ -129,6 +128,13 @@ ul {
 .page::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* 悬浮条会盖住画布底部，补一段可滚动余量，保证最后一行能滚到bar上方 */
+.page:not(.page--dark)::after {
+  content: '';
+  display: block;
+  height: calc(160px + var(--sab));
 }
 
 .page__canvas {
