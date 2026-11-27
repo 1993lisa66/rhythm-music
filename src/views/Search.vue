@@ -32,8 +32,14 @@ const TONE = {
  * 用请求序号丢弃过期响应，避免快速输入时旧结果覆盖新结果。
  */
 const results = ref([])
+const artists = ref([])
+const playlists = ref([])
 const searching = ref(false)
 let seq = 0
+
+const hasResult = computed(
+  () => results.value.length + artists.value.length + playlists.value.length > 0
+)
 
 const normalize = (q) => q.replace(/(系|音乐|歌曲)$/g, '')
 
@@ -41,19 +47,25 @@ async function runSearch(keyword) {
   const mine = ++seq
   searching.value = true
   try {
-    const payload = await api.search({ q: keyword, limit: 30 })
+    let payload = await api.search({ q: keyword, limit: 30 })
     if (mine !== seq) return
-    let songs = payload.songs
     const loose = normalize(keyword)
     // 关键词带「系 / 音乐」这类后缀时命中率低，退一步再搜一次
-    if (!songs.length && loose && loose !== keyword) {
-      const retry = await api.search({ q: loose, limit: 30 })
+    if (!payload.songs?.length && !payload.artists?.length && !payload.playlists?.length && loose && loose !== keyword) {
+      payload = await api.search({ q: loose, limit: 30 })
       if (mine !== seq) return
-      songs = retry.songs
     }
-    results.value = songs
+    results.value = payload.songs || []
+    artists.value = payload.artists || []
+    playlists.value = payload.playlists || []
+    // 关键词写进地址栏：刷新 / 返回都能还原这次搜索结果
+    router.replace({ query: { q: keyword } })
   } catch {
-    if (mine === seq) results.value = []
+    if (mine === seq) {
+      results.value = []
+      artists.value = []
+      playlists.value = []
+    }
   } finally {
     if (mine === seq) searching.value = false
   }
@@ -83,8 +95,16 @@ const rotateHot = async () => {
 
 const playRecommend = (item) => playSong(item.id)
 const playResult = (song) => playSong(song.id, results.value.map((s) => s.id))
+const playAllResults = () => {
+  if (results.value.length) playSong(results.value[0].id, results.value.map((s) => s.id))
+}
+const openArtist = (name) => router.push(`/artist/${encodeURIComponent(name)}`)
+const openPlaylist = (id) => router.push(`/playlist/${id}`)
 
 onMounted(async () => {
+  // 带 q 的深链直接出结果，否则刷新/分享进来会停在空态
+  const initial = (route.query.q || '').toString().trim()
+  if (initial) runSearch(initial)
   if (route.query.q) inputRef.value?.focus()
   try {
     await Promise.all([refreshHot(), refreshRecommend()])
@@ -101,6 +121,8 @@ watch(query, (value) => {
   if (!keyword) {
     seq += 1
     results.value = []
+    artists.value = []
+    playlists.value = []
     searching.value = false
     return
   }
@@ -193,25 +215,73 @@ watch(
       </template>
 
       <template v-else>
-        <p class="rlabel">
-          搜索结果 <span class="num">{{ results.length }}</span> 首
-        </p>
+        <div class="results">
+          <template v-if="hasResult">
+            <section v-if="artists.length" class="rgroup">
+              <h2 class="rgroup__title">歌手</h2>
+              <div class="artists">
+                <button
+                  v-for="a in artists"
+                  :key="a.name"
+                  type="button"
+                  class="acard"
+                  @click="openArtist(a.name)"
+                >
+                  <span class="acard__cover" :style="coverStyle(a.cover)"></span>
+                  <span class="acard__name">{{ a.name }}</span>
+                  <span class="acard__sub num">{{ a.songCount }} 首</span>
+                </button>
+              </div>
+            </section>
 
-        <div v-if="results.length" class="rlist">
-          <SongRow
-            v-for="song in results"
-            :key="song.id"
-            :song="song"
-            :active="current.id === song.id && state.playing"
-            @select="playResult"
-          />
-        </div>
+            <section v-if="playlists.length" class="rgroup">
+              <h2 class="rgroup__title">歌单</h2>
+              <div class="rlist">
+                <button
+                  v-for="p in playlists"
+                  :key="p.id"
+                  type="button"
+                  class="prow"
+                  @click="openPlaylist(p.id)"
+                >
+                  <span class="prow__cover" :style="coverStyle(p.cover)"></span>
+                  <span class="prow__text">
+                    <span class="prow__title">{{ p.title }}</span>
+                    <span class="prow__sub num">{{ p.count }} 首 · {{ p.durationText }}</span>
+                  </span>
+                  <Icon class="prow__go" name="chevron" :size="14" :stroke="1.8" />
+                </button>
+              </div>
+            </section>
 
-        <div v-else class="empty">
+            <section v-if="results.length" class="rgroup">
+              <div class="rgroup__head">
+                <h2 class="rgroup__title">
+                  歌曲 <span class="num">{{ results.length }}</span> 首
+                </h2>
+                <button type="button" class="rgroup__play" @click="playAllResults">
+                  <Icon name="play" :size="11" />
+                  <span>播放全部</span>
+                </button>
+              </div>
+              <div class="rlist">
+                <SongRow
+                  v-for="song in results"
+                  :key="song.id"
+                  :song="song"
+                  :active="current.id === song.id && state.playing"
+                  @select="playResult"
+                />
+              </div>
+            </section>
+          </template>
+
+          <div v-else-if="!searching" class="empty">
           <span class="empty__icon"><Icon name="search" :size="26" :stroke="1.6" /></span>
           <p class="empty__title">没有找到「{{ query }}」相关的音乐</p>
-          <p class="empty__sub">换个关键词，或者试试热门搜索</p>
-          <button type="button" class="empty__btn" @click="query = ''">清空重搜</button>
+            <p class="empty__sub">换个关键词，或者试试热门搜索</p>
+            <button type="button" class="empty__btn" @click="query = ''">清空重搜</button>
+          </div>
         </div>
       </template>
     </div>
@@ -424,39 +494,165 @@ watch(
 }
 
 /* 搜索结果 */
-.rlabel {
+/* 结果区：歌手 / 歌单 / 歌曲 三组共用一个滚动容器 */
+.results {
   position: absolute;
   left: 24px;
+  right: 24px;
   top: 114px;
+  bottom: 100px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.results::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.rgroup {
+  margin-bottom: 20px;
+}
+
+.rgroup__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 4px 8px;
+}
+
+.rgroup__title {
+  margin: 0 0 8px 4px;
   font-size: 13px;
+  font-weight: 600;
   line-height: 18px;
   color: var(--ink-sub);
 }
 
-.rlist {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 152px;
-  max-height: 500px;
-  overflow-y: auto;
+.rgroup__head .rgroup__title {
+  margin: 0;
+}
+
+.rgroup__play {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* 歌手：横向圆形头像 */
+.artists {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 2px 4px 6px;
   scrollbar-width: none;
+}
+
+.artists::-webkit-scrollbar {
+  height: 0;
+}
+
+.acard {
+  flex: 0 0 auto;
+  width: 78px;
+  text-align: center;
+}
+
+.acard__cover {
+  display: block;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background-color: var(--surface-cover);
+  box-shadow: 0 6px 14px rgba(43, 31, 26, 0.1);
+}
+
+.acard__name {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.acard__sub {
+  display: block;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-sub);
+}
+
+.rlist {
   border-radius: var(--r-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
   padding: 6px 0;
+  overflow: hidden;
 }
 
-.rlist::-webkit-scrollbar {
-  width: 0;
+/* 歌单行与音乐库列表同规格 */
+.prow {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  text-align: left;
+  transition: background 0.16s ease;
+}
+
+.prow:hover {
+  background: rgba(245, 239, 227, 0.6);
+}
+
+.prow__cover {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  flex: 0 0 auto;
+  background-color: var(--surface-cover);
+}
+
+.prow__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prow__title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--ink);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.prow__sub {
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--ink-sub);
+}
+
+.prow__go {
+  color: var(--placeholder);
+  flex: 0 0 auto;
 }
 
 /* 空状态 */
 .empty {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 300px;
+  margin-top: 120px;
   display: flex;
   flex-direction: column;
   align-items: center;

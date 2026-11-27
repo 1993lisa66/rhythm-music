@@ -48,9 +48,6 @@ const owned = computed(() => detail.value.owned === true)
 
 const trackIds = computed(() => tracks.value.map((t) => t.id))
 
-/* 列表高度按曲目数撑开，避免固定 250px 把后面的歌裁掉 */
-const canvasHeight = computed(() => Math.max(800, 476 + tracks.value.length * 52 + 96))
-
 const load = async (id) => {
   if (!id) return
   try {
@@ -223,7 +220,7 @@ const onPick = async (key) => {
 
 <template>
   <div class="page">
-    <div class="page__canvas" :style="{ height: `${canvasHeight}px` }">
+    <div class="page__canvas playlist">
       <button type="button" class="nav nav--back" aria-label="返回" @click="back">
         <Icon name="back" :size="22" :stroke="2" />
       </button>
@@ -240,9 +237,6 @@ const onPick = async (key) => {
 
       <div class="hero" :style="coverStyle(detail.cover, 0.58)">
         <span class="hero__badge">{{ detail.badge }}</span>
-        <span class="hero__note">
-          <Icon name="note" :size="30" :stroke="1.5" />
-        </span>
       </div>
 
       <h1 class="title">{{ detail.title }}</h1>
@@ -332,12 +326,17 @@ const onPick = async (key) => {
   color: var(--primary);
 }
 
+/* 整页走文档流：标题两行时后面的信息/按钮/曲目会自动下推，不再互相压住 */
+.playlist {
+  height: auto;
+  min-height: 800px;
+  padding: 92px 24px 150px;
+}
+
 /* 主封面 342 × 200 r24 */
 .hero {
-  position: absolute;
-  left: 24px;
-  top: 74px;
-  width: 342px;
+  position: relative;
+  width: 100%;
   height: 200px;
   border-radius: 24px;
   background-color: var(--primary);
@@ -368,27 +367,9 @@ const onPick = async (key) => {
   backdrop-filter: blur(4px);
 }
 
-.hero__note {
-  position: absolute;
-  left: 50%;
-  top: 46px;
-  transform: translateX(-50%);
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  z-index: 1;
-  backdrop-filter: blur(2px);
-}
 
 .title {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 294px;
+  margin: 20px 0 0;
   font-size: 24px;
   font-weight: 700;
   line-height: 32px;
@@ -397,20 +378,14 @@ const onPick = async (key) => {
 }
 
 .info {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 332px;
+  margin: 6px 0 0;
   font-size: 13px;
   line-height: 18px;
   color: var(--ink-sub);
 }
 
 .desc {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 360px;
+  margin: 8px 0 0;
   font-size: 13px;
   line-height: 20px;
   color: var(--ink-sub);
@@ -418,9 +393,7 @@ const onPick = async (key) => {
 
 /* 操作按钮 */
 .actions {
-  position: absolute;
-  left: 24px;
-  top: 404px;
+  margin: 20px 0 0;
   display: flex;
   gap: 12px;
 }
@@ -461,10 +434,8 @@ const onPick = async (key) => {
 
 /* 曲目列表 342 宽，高度随曲目数增长（画布高度同步计算） */
 .tracks {
-  position: absolute;
-  left: 24px;
-  top: 476px;
-  width: 342px;
+  margin: 18px 0 0;
+  width: 100%;
   min-height: 250px;
   border-radius: var(--r-card);
   background: var(--surface);

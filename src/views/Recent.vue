@@ -1,12 +1,13 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
+import ActionSheet from '@/components/ActionSheet.vue'
 import { api } from '@/api/client'
 import { data, refreshRecent } from '@/store/data'
 import { current, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
-import { coverStyle, fmtTime } from '@/utils/format'
+import { coverStyle, fmtSpan, fmtTime } from '@/utils/format'
 
 const groups = computed(() =>
   (data.recent?.groups || [])
@@ -16,11 +17,11 @@ const groups = computed(() =>
 
 const allIds = computed(() => groups.value.flatMap((g) => g.songs.map((s) => s.id)))
 const total = computed(() => allIds.value.length)
-const hoursText = computed(() => {
+const spanText = computed(() => {
   const seconds = groups.value
     .flatMap((g) => g.songs)
     .reduce((sum, s) => sum + (Number(s.duration) || 0), 0)
-  return (seconds / 3600).toFixed(1)
+  return fmtSpan(seconds)
 })
 
 const play = (song) => playSong(song.id, allIds.value)
@@ -28,8 +29,22 @@ const playAll = () => {
   if (allIds.value.length) playSong(allIds.value[0], allIds.value)
 }
 
-const clear = async () => {
+/* 清空历史不可恢复，先弹面板确认 */
+const confirming = ref(false)
+const clear = () => {
   if (!total.value) return
+  confirming.value = true
+}
+const clearActions = [
+  { key: 'keep', label: '保留记录' },
+  { key: 'clear', label: `清空 ${total.value} 首记录`, danger: true }
+]
+const onPick = async (key) => {
+  if (key !== 'clear') {
+    confirming.value = false
+    return
+  }
+  confirming.value = false
   try {
     await api.clearRecent()
     await refreshRecent()
@@ -63,7 +78,7 @@ onMounted(async () => {
         </span>
         <span class="summary__text">
           <span class="summary__title num">共 {{ total }} 首</span>
-          <span class="summary__sub num">约 {{ hoursText }} 小时 · 点此全部播放</span>
+          <span class="summary__sub num">{{ spanText }} · 点此全部播放</span>
         </span>
         <span class="summary__play">
           <Icon name="play" :size="15" />
@@ -104,6 +119,15 @@ onMounted(async () => {
         <p class="empty__sub">听过的歌会自动出现在这里</p>
       </div>
     </div>
+
+    <ActionSheet
+      :open="confirming"
+      title="清空播放记录"
+      subtitle="最近播放的分组会全部清空，且无法恢复"
+      :actions="clearActions"
+      @pick="onPick"
+      @close="confirming = false"
+    />
   </div>
 </template>
 

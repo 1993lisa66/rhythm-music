@@ -1,8 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
+import ActionSheet from '@/components/ActionSheet.vue'
 import { clearQueue, current, playAt, queueSongs, removeAt, state } from '@/store/player'
 import { toast } from '@/store/toast'
 import { coverStyle } from '@/utils/format'
@@ -18,10 +19,28 @@ const remove = (index) => {
   if (!removeAt(index)) toast('队列至少保留一首歌')
 }
 
+/* 清空队列是破坏性操作，先在面板里确认，避免误触把后面的歌全丢掉 */
+const confirming = ref(false)
 const clear = () => {
+  if (!queueTotal.value) {
+    toast('队列已经空了')
+    return
+  }
+  confirming.value = true
+}
+const doClear = () => {
   clearQueue()
+  confirming.value = false
   toast('已清空队列，仅保留当前播放')
 }
+const onPick = (key) => {
+  if (key === 'clear') doClear()
+  else confirming.value = false
+}
+const clearActions = [
+  { key: 'keep', label: '保留队列' },
+  { key: 'clear', label: `清空 ${queueTotal.value} 首待播`, danger: true }
+]
 
 const openNow = () => router.push('/now')
 </script>
@@ -74,6 +93,15 @@ const openNow = () => router.push('/now')
         </li>
       </ul>
     </div>
+
+    <ActionSheet
+      :open="confirming"
+      title="清空播放队列"
+      subtitle="只保留当前播放的这首歌，其余待播曲目将移出队列"
+      :actions="clearActions"
+      @pick="onPick"
+      @close="confirming = false"
+    />
   </div>
 </template>
 

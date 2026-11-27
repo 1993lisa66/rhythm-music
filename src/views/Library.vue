@@ -89,11 +89,8 @@ const rowCount = computed(() => {
 })
 /* 卡片高度跟随实际行数（60 一行 + 上下 7px 内边距），不预留空白 */
 const cardHeight = computed(() => Math.max(74, rowCount.value * 60 + 14))
-const playlistHeaderTop = computed(() => 242 + cardHeight.value + 14)
-const playlistGridTop = computed(() => playlistHeaderTop.value + 36)
-const canvasHeight = computed(() =>
-  Math.max(800, playlistGridTop.value + Math.ceil(playlistRows.value.length / 2) * 164 + 140)
-)
+/* 每个 tab 只留一套列表，画布高度按卡片实际高度撑开 */
+const canvasHeight = computed(() => Math.max(800, 242 + cardHeight.value + 150))
 
 const isRowActive = (song) => current.value.id === song.id && state.playing
 
@@ -218,29 +215,6 @@ onMounted(async () => {
           </button>
         </template>
       </div>
-
-      <SectionHeader
-        class="sec sec--playlists"
-        :style="{ top: `${playlistHeaderTop}px` }"
-        :title="library.playlists.title"
-        more="全部 ›"
-        @more="router.push('/mylists')"
-      />
-
-      <div class="pls" :style="{ top: `${playlistGridTop}px` }">
-        <button
-          v-for="p in playlistRows"
-          :key="p.id"
-          type="button"
-          class="pl"
-          @click="openPlaylist(p)"
-        >
-          <span class="pl__cover" :style="coverStyle(p.cover)">
-            <span class="pl__count">{{ p.count }} 首</span>
-          </span>
-          <span class="pl__title">{{ p.title }}</span>
-        </button>
-      </div>
     </div>
 
     <ActionSheet
@@ -341,10 +315,6 @@ onMounted(async () => {
   top: 206px;
 }
 
-.sec--playlists {
-  top: 476px;
-}
-
 /* 列表卡片 342 × 220 r20 */
 .card {
   position: absolute;
@@ -420,61 +390,4 @@ onMounted(async () => {
   flex: 0 0 auto;
 }
 
-/* 我的歌单：2 × 152×116，标题 476–500，卡片从 512 起 */
-.pls {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 512px;
-  display: grid;
-  grid-template-columns: repeat(2, 152px);
-  gap: 20px 14px;
-}
-
-.pl {
-  width: 152px;
-  text-align: left;
-  transition: transform 0.18s ease;
-}
-
-.pl:active {
-  transform: scale(0.98);
-}
-
-.pl__cover {
-  position: relative;
-  display: block;
-  width: 152px;
-  height: 116px;
-  border-radius: var(--r-card);
-  background-color: var(--surface-cover);
-  box-shadow: 0 6px 16px rgba(224, 120, 86, 0.12);
-  overflow: hidden;
-}
-
-.pl__count {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  height: 20px;
-  padding: 0 8px;
-  border-radius: 10px;
-  background: rgba(43, 31, 26, 0.34);
-  color: #fff;
-  font-size: 10px;
-  line-height: 20px;
-  backdrop-filter: blur(4px);
-}
-
-.pl__title {
-  display: block;
-  margin-top: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 18px;
-  color: var(--ink);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
 </style>

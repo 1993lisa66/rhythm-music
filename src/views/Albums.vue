@@ -52,7 +52,7 @@ onMounted(async () => {
             <span class="card__count">{{ a.songCount }} 首</span>
           </span>
           <span class="card__title">{{ a.name }}</span>
-          <span class="card__sub">{{ a.artist }} · {{ fmtSpan(a.duration) }}</span>
+          <span class="card__sub">{{ fmtSpan(a.duration) }}<template v-if="a.year"> · {{ a.year }}</template></span>
         </button>
       </div>
 

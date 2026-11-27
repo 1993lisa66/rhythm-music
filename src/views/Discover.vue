@@ -33,13 +33,21 @@ const openFeatured = () => {
 }
 const openSearch = () => router.push('/search')
 
+/* 随心听支持两种切片：按流派（genre）或按合集（album） */
+const moodSongs = (mood) =>
+  mood.album
+    ? data.songs.filter((s) => s.album === mood.album)
+    : data.songs.filter((s) => s.genre === mood.genre)
+
 const playMood = (mood) => {
-  const list = data.songs.filter((s) => s.genre === mood.genre)
+  const list = moodSongs(mood)
   if (list.length) playSong(list[0].id, list.map((s) => s.id))
   else router.push({ path: '/search', query: { q: mood.genre } })
 }
 
 const playRecent = (song) => playSong(song.id, recentIds.value)
+/* 胶囊上标出这个切片有多少首，点之前就知道会播到什么 */
+const moodCount = (mood) => moodSongs(mood).length
 
 /* 画布原本固定 800px，绝对定位的行列表再长也撑不开滚动区；按行数撑高
    卡片上下各 7px 内边距 + 每行 60px（与音乐库列表一致） */
@@ -65,12 +73,7 @@ onMounted(async () => {
         <span class="search__ph">{{ discover.searchPlaceholder }}</span>
       </button>
 
-      <SectionHeader
-        class="sec sec--featured"
-        :title="discover.featured.sectionTitle"
-        :more="discover.featured.more"
-        @more="router.push('/library')"
-      />
+      <SectionHeader class="sec sec--featured" :title="discover.featured.sectionTitle" />
 
       <button
         v-if="featured"
@@ -95,7 +98,8 @@ onMounted(async () => {
           :style="{ background: TONE[m.tone] }"
           @click="playMood(m)"
         >
-          {{ m.name }}
+          <span class="mood__name">{{ m.name }}</span>
+          <span class="mood__sub num">{{ moodCount(m) }} 首</span>
         </button>
       </div>
 
@@ -288,10 +292,26 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   box-shadow: 0 4px 14px rgba(43, 31, 26, 0.08);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mood__name {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.mood__sub {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 14px;
+  letter-spacing: 0;
+  opacity: 0.82;
 }
 
 .mood:hover {

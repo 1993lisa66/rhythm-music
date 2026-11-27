@@ -69,9 +69,7 @@ const pick = (line) => {
           <p class="head__title">{{ current.title }}</p>
           <p class="head__sub">{{ current.artist }}</p>
         </div>
-        <button type="button" class="head__btn" aria-label="收起歌词" @click="back">
-          <Icon name="close" :size="20" :stroke="2" />
-        </button>
+        <span class="head__btn" aria-hidden="true"></span>
       </div>
 
       <div v-if="lines.length" class="lines">

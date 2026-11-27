@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import Icon from './Icon.vue'
-import { current, state, toggle } from '@/store/player'
+import { current, next, progress } from '@/store/player'
 import { coverStyle } from '@/utils/format'
 
 defineProps({
@@ -22,10 +22,14 @@ const open = () => router.push('/now')
       <p class="mini__artist">{{ current.artist }} · {{ current.album }}</p>
     </div>
 
-    <button type="button" class="mini__play" :class="{ 'mini__play--pause': state.playing }"
-      :aria-label="state.playing ? '暂停' : '播放'" @click.stop="toggle">
-      <Icon :name="state.playing ? 'pause' : 'play'" :size="compact ? 13 : 14" />
+    <!-- 播放/暂停交给底部 TabBar 中央键，这里只保留切歌，避免两个圆形按钮同屏 -->
+    <button type="button" class="mini__next" aria-label="下一首" @click.stop="next(false)">
+      <Icon name="next" :size="compact ? 13 : 14" />
     </button>
+
+    <span class="mini__bar" aria-hidden="true">
+      <i :style="{ width: `${Math.round(progress * 100)}%` }"></i>
+    </span>
   </div>
 </template>
 
@@ -103,33 +107,45 @@ const open = () => router.push('/now')
   text-overflow: ellipsis;
 }
 
-.mini__play {
+.mini__next {
   flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: var(--primary);
-  color: #fff;
+  color: var(--ink);
   display: grid;
   place-items: center;
   margin-left: auto;
   margin-right: 6px;
-  transition: transform 0.16s ease, background 0.16s ease;
+  transition: transform 0.16s ease, color 0.16s ease;
 }
 
-.mini--compact .mini__play {
+.mini--compact .mini__next {
   margin-right: 20px;
 }
 
-.mini__play :deep(.ico) {
-  transform: translateX(1px);
-}
-
-.mini__play--pause :deep(.ico) {
-  transform: none;
-}
-
-.mini__play:active {
+.mini__next:active {
   transform: scale(0.92);
+  color: var(--primary);
+}
+
+/* 迷你播放器底部的细进度条 */
+.mini__bar {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(43, 31, 26, 0.1);
+  overflow: hidden;
+}
+
+.mini__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--primary);
+  transition: width 0.3s linear;
 }
 </style>

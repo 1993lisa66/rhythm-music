@@ -1,19 +1,54 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
 import Switch from '@/components/Switch.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
 import { QUALITIES, settings, updateSetting } from '@/store/settings'
+import { auth, logout } from '@/store/auth'
 import { refreshDataSources } from '@/store/data'
 import { syncPlayer } from '@/store/player'
 import { toast } from '@/store/toast'
 
+const router = useRouter()
 const picker = ref(false)
 const sourcePicker = ref(false)
-const cache = ref('12.4 MB')
+const signingOut = ref(false)
+const cacheBytes = ref(0)
 
 const SOURCE_LABELS = { server: '服务器资源', oss: 'OSS' }
+
+const fmtBytes = (bytes) => {
+  if (!bytes) return '0 B'
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${bytes} B`
+}
+const cache = ref('0 B')
+
+/* 缓存大小取浏览器真实占用，不再写死数字 */
+const refreshCache = async () => {
+  let usage = 0
+  try {
+    const estimate = await navigator.storage?.estimate?.()
+    usage = estimate?.usage || 0
+  } catch {
+    usage = 0
+  }
+  if (!usage) {
+    try {
+      usage = Object.keys(window.localStorage).reduce(
+        (sum, key) => sum + key.length + (window.localStorage.getItem(key) || '').length,
+        0
+      )
+    } catch {
+      usage = 0
+    }
+  }
+  cacheBytes.value = usage
+  cache.value = fmtBytes(usage)
+}
 
 const qualityActions = () =>
   QUALITIES.map((q) => ({ key: q, label: q, active: settings.quality === q }))
@@ -47,14 +82,43 @@ const chooseSource = async (key) => {
   }
 }
 
-const clearCache = () => {
-  if (cache.value === '0 B') {
-    toast('缓存已经很干净了')
+/* 只清真正的缓存：Cache Storage + 非登录态的本地点位，登录 token 保留 */
+const clearCache = async () => {
+  if (!cacheBytes.value) {
+    toast('当前没有可清理的缓存')
     return
   }
-  cache.value = '0 B'
-  toast('已清除 12.4 MB 缓存')
+  const before = cache.value
+  try {
+    if (window.caches?.keys) {
+      const keys = await window.caches.keys()
+      await Promise.all(keys.map((key) => window.caches.delete(key)))
+    }
+    Object.keys(window.localStorage)
+      .filter((key) => key.startsWith('rhythm.') && key !== 'rhythm.token' && key !== 'rhythm.lastEmail')
+      .forEach((key) => window.localStorage.removeItem(key))
+    await refreshCache()
+    toast(`已清理 ${before} 缓存`)
+  } catch {
+    toast('清理缓存失败')
+  }
 }
+
+/* 退出登录：api 失效也不阻塞，本地会话一定清掉 */
+const confirmLogout = () => {
+  signingOut.value = true
+}
+const doLogout = async () => {
+  signingOut.value = false
+  await logout()
+  router.replace({ name: 'login' })
+}
+const logoutActions = [
+  { key: 'keep', label: '继续使用' },
+  { key: 'logout', label: '退出登录', danger: true }
+]
+
+onMounted(refreshCache)
 </script>
 
 <template>
@@ -105,9 +169,11 @@ const clearCache = () => {
         <div class="row">
           <span class="row__icon"><Icon name="user" :size="19" :stroke="1.8" /></span>
           <span class="row__name">账号</span>
-          <span class="row__value">ID: 8823 6102</span>
+          <span class="row__value">{{ auth.user?.id || '—' }}</span>
         </div>
       </div>
+
+      <button type="button" class="logout" @click="confirmLogout">退出登录</button>
     </div>
 
     <ActionSheet
@@ -117,6 +183,15 @@ const clearCache = () => {
       :actions="qualityActions()"
       @pick="chooseQuality"
       @close="picker = false"
+    />
+
+    <ActionSheet
+      :open="signingOut"
+      title="退出登录"
+      subtitle="退出后需要重新登录才能看到自己的歌单和收藏"
+      :actions="logoutActions"
+      @pick="(key) => (key === 'logout' ? doLogout() : (signingOut = false))"
+      @close="signingOut = false"
     />
 
     <ActionSheet
@@ -153,6 +228,24 @@ const clearCache = () => {
   box-shadow: var(--shadow-card);
   padding: 4px 0;
   overflow: hidden;
+}
+
+/* 退出登录：单独一条，靠颜色与普通设置项区分 */
+.logout {
+  width: 100%;
+  height: 52px;
+  margin-top: 4px;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 15px;
+  font-weight: 600;
+  color: #c4543f;
+  transition: transform 0.16s ease;
+}
+
+.logout:active {
+  transform: scale(0.985);
 }
 
 .row {
