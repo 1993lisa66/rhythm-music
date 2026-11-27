@@ -229,7 +229,8 @@ onMounted(async () => {
   left: 24px;
   top: 324px;
   width: 342px;
-  height: 224px;
+  /* 高度跟随菜单条目数，条目变少时不留大片空白 */
+  height: auto;
   border-radius: var(--r-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
