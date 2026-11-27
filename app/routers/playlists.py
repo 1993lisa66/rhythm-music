@@ -76,6 +76,9 @@ def _sync_meta(db: Session, playlist: Playlist) -> None:
 
 
 def _detail(db: Session, user: User, playlist_id: str) -> dict:
+    # 会话是 expire_on_commit=False，写操作后 playlist.tracks 可能还是旧缓存，
+    # 这里统一失效关系强制回库重读，保证「添加/移除后立即返回最新曲目」。
+    db.expire_all()
     playlist = get_user_playlist(db, user.id, playlist_id)
     payload = playlist_detail(playlist, favorite_ids(db, user.id))
     payload["owned"] = playlist.owner_id == user.id
@@ -146,6 +149,7 @@ def get_playlist_detail(
         playlist = db.scalars(stmt).first()
     if playlist is None:
         raise not_found(f"歌单不存在：{playlist_id}", code="playlist_not_found")
+    db.expire(playlist, ["tracks"])
     payload = playlist_detail(playlist, favorite_ids(db, uid))
     payload["owned"] = bool(uid) and playlist.owner_id == uid
     return payload
@@ -214,6 +218,8 @@ def add_playlist_tracks(
         db.flush()
         _sync_meta(db, playlist)
         db.commit()
+        # 让关系缓存失效，下面的 _detail 才能读到刚加入的曲目
+        db.expire(playlist, ["tracks"])
     return _detail(db, user, playlist_id)
 
 
@@ -236,6 +242,7 @@ def remove_playlist_track(
     db.flush()
     _sync_meta(db, playlist)
     db.commit()
+    db.expire(playlist, ["tracks"])
     return _detail(db, user, playlist_id)
 
 
