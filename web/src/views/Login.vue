@@ -165,7 +165,7 @@ const submit = async () => {
     </form>
 
     <div class="demo">
-      <p class="demo__text">演示账号 <span class="demo__id num">demo@rhythm.app</span> / 密码 2026</p>
+      <p class="demo__text">演示账号 <span class="demo__id num">demo@rhythm.app</span> / 密码 <span class="demo__id num">rhythm2026</span></p>
       <button type="button" class="demo__btn" @click="fillDemo">一键填入演示账号</button>
     </div>
   </div>
@@ -225,17 +225,18 @@ const submit = async () => {
 
 .tabs {
   margin-top: 30px;
-  height: 44px;
+  height: 46px;
   padding: 4px;
-  border-radius: var(--r-btn);
-  background: var(--surface-soft);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(224, 120, 86, 0.09);
   display: flex;
   gap: 4px;
 }
 
 .tabs__item {
   flex: 1 1 0;
-  border-radius: 20px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   color: var(--ink-sub);
@@ -249,66 +250,93 @@ const submit = async () => {
 }
 
 .form {
-  margin-top: 20px;
+  margin-top: 22px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .field__label {
-  padding-left: 4px;
+  padding-left: 2px;
   font-size: 12px;
   line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   color: var(--ink-sub);
 }
 
+/* 输入框：白瓷胶囊 + 细描边；焦点态由容器整体表达（描边变主色 + 柔光），
+   内部 input 不再画任何框 */
 .field__box {
-  height: 52px;
-  padding: 0 14px;
-  border-radius: var(--r-btn);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
+  position: relative;
+  height: 54px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1.5px solid rgba(224, 120, 86, 0.1);
+  box-shadow: 0 1px 2px rgba(43, 31, 26, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
-  gap: 10px;
-  transition: box-shadow 0.18s ease;
+  gap: 11px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .field__box:focus-within {
-  box-shadow: 0 0 0 2px rgba(224, 120, 86, 0.24);
+  background: #fff;
+  border-color: rgba(224, 120, 86, 0.55);
+  box-shadow: 0 6px 20px rgba(224, 120, 86, 0.16), 0 0 0 4px rgba(224, 120, 86, 0.1);
 }
 
 .field__icon {
   color: var(--placeholder);
   flex: 0 0 auto;
+  transition: color 0.2s ease;
 }
 
+.field__box:focus-within .field__icon {
+  color: var(--primary);
+}
+
+/* 16px：iOS 上小于 16px 的表单控件聚焦会自动放大页面 */
 .field__input {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 14px;
-  line-height: 18px;
+  height: 100%;
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: 0.1px;
   color: var(--ink);
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .field__input::placeholder {
-  color: var(--placeholder);
+  color: #c3b6a9;
+  font-size: 15px;
 }
 
 .field__eye {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  color: var(--ink-sub);
+  width: 40px;
+  height: 40px;
+  margin-right: -8px;
+  border-radius: 12px;
+  color: var(--placeholder);
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+
+.field__eye:active {
+  background: rgba(224, 120, 86, 0.08);
+  color: var(--primary);
 }
 
 .error {
@@ -324,16 +352,20 @@ const submit = async () => {
 }
 
 .submit {
-  height: 52px;
-  margin-top: 4px;
-  border-radius: var(--r-btn);
+  height: 54px;
+  margin-top: 6px;
+  border-radius: 16px;
   background: var(--sunset);
   color: #fff;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.6px;
+  letter-spacing: 1px;
   box-shadow: var(--shadow-cta);
-  transition: transform 0.16s ease, opacity 0.16s ease;
+  transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease;
+}
+
+.submit:not(:disabled):hover {
+  box-shadow: 0 12px 28px rgba(224, 120, 86, 0.34);
 }
 
 .submit:active {
@@ -365,12 +397,18 @@ const submit = async () => {
 }
 
 .demo__btn {
-  height: 34px;
-  padding: 0 16px;
-  border-radius: 17px;
-  border: 1.5px solid var(--primary);
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 19px;
+  border: 1.5px solid rgba(224, 120, 86, 0.45);
   color: var(--primary);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.demo__btn:active {
+  background: rgba(224, 120, 86, 0.08);
+  border-color: var(--primary);
 }
 </style>
