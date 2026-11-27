@@ -236,13 +236,15 @@ def update_blocks(db: Session, songs: list[Song], dry_run: bool) -> None:
         {"text": "对唱", "tone": "honey"},
         {"text": "戏腔版", "tone": "plum"},
     ]
+    # 搜索页两行布局：大卡行、小卡行各 2 张（390px 设备减 48px 内边距 = 342px，
+    # 两张 152px 卡 + 14px 间距 = 318px 刚好放下）；多放一张会溢出外壳。
     search.setdefault("recommend", {})["items"] = [
         {
             "id": song.id,
             "title": song.title,
             "sub": f"{song.artist} · 戏腔",
             "cover": song.cover,
-            "size": "lg" if index == 0 else "sm",
+            "size": "lg" if index < 2 else "sm",
         }
         for index, song in enumerate(songs[:4])
     ]
