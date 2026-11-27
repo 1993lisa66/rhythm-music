@@ -144,17 +144,18 @@ npm run build      # 产物在 web/dist
 
 统一前缀 `/api/v1`，除注册 / 登录外均需 `Authorization: Bearer <token>`。错误统一返回 `{"error": {"code", "message"}}`。
 
-| 模块 | 代表接口 | 说明 |
+| 模块 | 代表接口 | 能力 |
 | --- | --- | --- |
-| 鉴权 | `POST /auth/register`、`POST /auth/login`、`GET /auth/me` | 注册、登录、当前账号 |
-| 发现 | `GET /discover` | 问候语、推荐、随心听、最近播放聚合 |
-| 乐库 | `GET /library`、`GET /library/albums`、`GET /library/albums/{name}`、`GET /artists/{name}` | 三个 Tab 与专辑 / 歌手详情 |
-| 歌曲 | `GET /songs`、`GET /songs/{id}`、`DELETE /songs/{id}`、`GET /songs/{id}/lyrics` | 筛选排序分页、详情、删除、歌词 |
-| 歌单 | `GET /playlists`、`POST /playlists`、`POST /playlists/{id}/tracks`、`POST /playlists/{id}/play` | 增删改查、加歌、播放全部 |
-| 播放 | `POST /player/play`、`/pause`、`/next`、`/prev`、`/seek`、`/shuffle`、`/repeat`、`GET /player/queue` | 播放态与队列 |
-| 搜索 | `GET /search`、`GET /search/hot`、`POST /search/hot/refresh`、`GET /search/recommend` | 三组结果、热搜、猜你喜欢 |
-| 收藏 / 最近 | `PUT /favorites/{id}`、`GET /recent`、`DELETE /recent` | 收藏取反、最近播放去重 |
-| 我的 | `GET /me/profile`、`GET /me/settings`、`PATCH /me/settings` | 资料统计、播放设置 |
+| 鉴权 | `POST /auth/login` | 注册、登录、当前账号 |
+| 发现 | `GET /discover` | 首页聚合数据 |
+| 乐库 | `GET /library` | 歌曲 / 歌单 / 专辑三 Tab |
+| 专辑 / 歌手 | `GET /library/albums` | 专辑列表、专辑与歌手详情 |
+| 歌曲 | `GET /songs` | 筛选、排序、分页、删除 |
+| 歌单 | `POST /playlists` | 增删改查、加歌、播放全部 |
+| 播放 | `POST /player/play` | 播放态、进度、随机循环、队列 |
+| 搜索 | `GET /search` | 三组结果、热搜、猜你喜欢 |
+| 收藏 / 最近 | `GET /recent` | 收藏、最近播放（同曲去重） |
+| 我的 | `GET /me/profile` | 资料统计、播放设置 |
 
 ---
 
