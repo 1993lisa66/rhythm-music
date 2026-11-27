@@ -224,6 +224,11 @@ def get_artist(
     songs = db.scalars(
         select(Song).where(Song.artist == name).order_by(Song.added_order)
     ).all()
+    # 「戏腔典藏」这类是合集名（album_artist），不挂在单曲艺人上：artist 查不到时按合集兜底
+    if not songs:
+        songs = db.scalars(
+            select(Song).where(Song.album_artist == name).order_by(Song.added_order)
+        ).all()
     if not songs:
         raise HTTPException(status_code=404, detail="歌手不存在")
     liked = favorite_ids(db, user_id_of(user))

@@ -337,7 +337,8 @@ class SettingsPatch(CamelModel):
 class MoodOut(CamelModel):
     name: str
     tone: str
-    genre: str
+    genre: str = ""
+    album: str = ""
 
 
 class FeatureOut(CamelModel):

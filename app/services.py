@@ -463,7 +463,7 @@ def computed_stats(db: Session, user_id: str) -> dict:
         or 0,
         "songs": db.scalar(select(func.count()).select_from(Song)) or 0,
         "today_plays": db.scalar(
-            select(func.count())
+            select(func.count(func.distinct(PlayEvent.song_id)))
             .select_from(PlayEvent)
             .where(PlayEvent.user_id == user_id, PlayEvent.played_at >= today)
         )

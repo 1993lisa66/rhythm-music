@@ -38,8 +38,7 @@ MENU_VALUES = {
 STAT_LABELS = [
     ("favorites", "收藏"),
     ("playlists", "歌单"),
-    ("following", "关注"),
-    ("songs", "首歌"),
+    ("songs", "歌曲"),
 ]
 
 
