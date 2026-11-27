@@ -308,38 +308,31 @@ onMounted(async () => {
   left: 24px;
   right: 24px;
   top: 576px;
-  padding: 6px 0;
+  padding: 7px 0;
   border-radius: var(--r-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
-.recent__li + .recent__li {
-  box-shadow: inset 0 1px 0 rgba(43, 31, 26, 0.05);
-}
-
 .rrow {
   width: 100%;
-  height: 58px;
-  padding: 0 14px;
+  height: 60px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  border-radius: 14px;
   text-align: left;
   transition: background 0.16s ease;
 }
 
 .rrow:hover {
-  background: rgba(224, 120, 86, 0.045);
+  background: rgba(245, 239, 227, 0.6);
 }
 
 .rrow:active {
-  background: rgba(224, 120, 86, 0.09);
-}
-
-.rrow--on {
-  background: rgba(224, 120, 86, 0.06);
+  background: var(--surface-soft);
 }
 
 .rrow__rank {
@@ -358,9 +351,9 @@ onMounted(async () => {
 
 .rrow__cover {
   position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--r-thumb);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
   flex: 0 0 auto;
   background-color: var(--surface-cover);
   box-shadow: 0 2px 6px rgba(43, 31, 26, 0.08);
@@ -389,7 +382,7 @@ onMounted(async () => {
 }
 
 .rrow__title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 18px;
   color: var(--ink);
@@ -399,8 +392,8 @@ onMounted(async () => {
 }
 
 .rrow__sub {
-  font-size: 11px;
-  line-height: 14px;
+  font-size: 12px;
+  line-height: 15px;
   color: var(--ink-sub);
   overflow: hidden;
   white-space: nowrap;
