@@ -83,7 +83,8 @@ const rowCount = computed(() => {
   if (activeTab.value === '歌单') return playlistRows.value.length
   return albumRows.value.length
 })
-const cardHeight = computed(() => Math.max(220, rowCount.value * 60 + 14))
+/* 卡片高度跟随实际行数（60 一行 + 上下 7px 内边距），不预留空白 */
+const cardHeight = computed(() => Math.max(74, rowCount.value * 60 + 14))
 const playlistHeaderTop = computed(() => 242 + cardHeight.value + 14)
 const playlistGridTop = computed(() => playlistHeaderTop.value + 36)
 const canvasHeight = computed(() =>
