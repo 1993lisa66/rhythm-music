@@ -42,6 +42,7 @@ const actions = computed(() => [
   { key: 'like', label: liked.value ? '取消收藏' : '收藏歌曲', icon: 'heart', active: liked.value },
   { key: 'add-to-playlist', label: '添加到歌单', icon: 'plus' },
   { key: 'queue', label: '播放队列', icon: 'queue' },
+  { key: 'artist', label: '查看歌手', icon: 'mic' },
   { key: 'album', label: '查看专辑', icon: 'note' },
   { key: 'share', label: '分享歌曲', icon: 'share' },
   { key: 'remove', label: '删除歌曲资源', icon: 'trash', danger: true }
@@ -108,8 +109,14 @@ const onPick = async (key) => {
     pickPlaylist.value = true
   } else if (key === 'queue') {
     openQueue()
+  } else if (key === 'artist') {
+    // 曲目里的歌手是多歌手拼接（如「甲、乙」），单看某一位会漏歌，按原样查整串
+    if (current.value.artist) {
+      router.push(`/artist/${encodeURIComponent(current.value.artist)}`)
+    }
   } else if (key === 'album') {
-    router.push({ path: '/search', query: { q: current.value.album } })
+    if (current.value.album) router.push(`/album/${encodeURIComponent(current.value.album)}`)
+    else router.push({ path: '/search', query: { q: current.value.title } })
   } else if (key === 'share') {
     try {
       await navigator.clipboard.writeText(window.location.href)

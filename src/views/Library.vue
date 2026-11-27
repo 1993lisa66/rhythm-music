@@ -8,7 +8,7 @@ import ActionSheet from '@/components/ActionSheet.vue'
 import { data, refreshAlbums, refreshLibrary } from '@/store/data'
 import { current, playSong, state } from '@/store/player'
 import { toast } from '@/store/toast'
-import { coverStyle, fmtTime } from '@/utils/format'
+import { coverStyle, fmtSpan } from '@/utils/format'
 
 const router = useRouter()
 
@@ -94,10 +94,11 @@ const canvasHeight = computed(() =>
 const isRowActive = (song) => current.value.id === song.id && state.playing
 
 const playRow = (song) => playSong(song.id, songIds.value)
-const playAlbum = (album) => {
-  if (album.trackIds.length) playSong(album.trackIds[0], album.trackIds)
-}
 const openPlaylist = (p) => router.push(`/playlist/${p.id}`)
+/* 专辑改成进详情页，才能看到合集简介与曲目列表 */
+const openAlbum = (album) => {
+  if (album?.name) router.push(`/album/${encodeURIComponent(album.name)}`)
+}
 
 /* 切换 tab：重置分页并回到顶部，避免停在旧位置立即触发加载 */
 const selectTab = (t) => {
@@ -202,14 +203,14 @@ onMounted(async () => {
             :key="a.name"
             type="button"
             class="crow"
-            @click="playAlbum(a)"
+            @click="openAlbum(a)"
           >
             <span class="crow__cover" :style="coverStyle(a.cover)"></span>
             <span class="crow__text">
               <span class="crow__title">{{ a.name }}</span>
-              <span class="crow__sub">{{ a.artist }}</span>
+              <span class="crow__sub">{{ a.artist }} · {{ a.songCount }} 首</span>
             </span>
-            <span class="crow__dur num">{{ fmtTime(a.duration) }}</span>
+            <span class="crow__dur num">{{ fmtSpan(a.duration) }}</span>
           </button>
         </template>
       </div>
