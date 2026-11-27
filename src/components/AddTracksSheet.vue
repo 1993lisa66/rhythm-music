@@ -16,7 +16,7 @@ const emit = defineEmits(['added', 'close'])
 
 const ready = ref(false)
 const keyword = ref('')
-const adding = ref('')
+const adding = ref(false)
 const addedCount = ref(0)
 const included = reactive(new Set())
 
@@ -29,28 +29,31 @@ watch(
   (open) => {
     if (!open) return
     keyword.value = ''
-    adding.value = ''
+    adding.value = false
     addedCount.value = 0
     included.clear()
     props.existingIds.forEach((id) => included.add(id))
   }
 )
 
+/* 搜索时展示全部匹配，不再截断；未搜索时优先展示还没加进来的歌 */
 const results = computed(() => {
   const key = keyword.value.trim().toLowerCase()
-  const list = key
-    ? data.songs.filter((song) =>
-        [song.title, song.artist, song.album].some((text) =>
-          String(text || '').toLowerCase().includes(key)
-        )
+  if (key) {
+    return data.songs.filter((song) =>
+      [song.title, song.artist, song.album].some((text) =>
+        String(text || '').toLowerCase().includes(key)
       )
-    : data.songs
-  return list.slice(0, 80)
+    )
+  }
+  return [...data.songs].sort((a, b) => Number(included.has(a.id)) - Number(included.has(b.id)))
 })
+
+const pending = computed(() => results.value.filter((song) => !included.has(song.id)))
 
 const add = async (song) => {
   if (!props.playlistId || included.has(song.id) || adding.value) return
-  adding.value = song.id
+  adding.value = true
   try {
     await api.addPlaylistTracks(props.playlistId, [song.id])
     included.add(song.id)
@@ -59,7 +62,27 @@ const add = async (song) => {
   } catch (error) {
     toast(error?.message || '添加失败')
   } finally {
-    adding.value = ''
+    adding.value = false
+  }
+}
+
+/* 一键把当前列表里未添加的歌全部加进来，分批提交避免单请求过大 */
+const addAll = async () => {
+  const ids = pending.value.map((song) => song.id)
+  if (!props.playlistId || !ids.length || adding.value) return
+  adding.value = true
+  try {
+    for (let i = 0; i < ids.length; i += 50) {
+      await api.addPlaylistTracks(props.playlistId, ids.slice(i, i + 50))
+    }
+    ids.forEach((id) => included.add(id))
+    addedCount.value += ids.length
+    emit('added')
+    toast(`已添加 ${ids.length} 首`)
+  } catch (error) {
+    toast(error?.message || '批量添加失败')
+  } finally {
+    adding.value = false
   }
 }
 </script>
@@ -73,12 +96,18 @@ const add = async (song) => {
 
           <div class="head">
             <p class="title">添加歌曲</p>
-            <span class="count num">已添加 {{ addedCount }} 首</span>
+            <span class="count num">本次已加 {{ addedCount }} 首</span>
           </div>
 
           <div class="search">
             <Icon name="search" :size="15" :stroke="1.9" />
             <input v-model="keyword" type="text" placeholder="搜索歌曲、歌手、专辑" />
+          </div>
+
+          <div v-if="pending.length" class="batch">
+            <button type="button" class="batch__btn" :disabled="adding" @click="addAll">
+              添加全部未添加（{{ pending.length }} 首）
+            </button>
           </div>
 
           <ul class="list">
@@ -87,17 +116,16 @@ const add = async (song) => {
                 type="button"
                 class="row"
                 :class="{ 'row--on': included.has(song.id) }"
-                :disabled="included.has(song.id) || adding === song.id"
+                :disabled="included.has(song.id) || adding"
                 @click="add(song)"
               >
                 <span class="row__cover" :style="coverStyle(song.cover)"></span>
                 <span class="row__text">
                   <span class="row__title">{{ song.title }}</span>
-                  <span class="row__sub">{{ song.artist }}</span>
+                  <span class="row__sub">{{ included.has(song.id) ? `已在歌单 · ${song.artist}` : song.artist }}</span>
                 </span>
                 <span class="row__act">
                   <Icon v-if="included.has(song.id)" name="check" :size="15" :stroke="2.4" />
-                  <Icon v-else-if="adding === song.id" name="refresh" :size="14" />
                   <Icon v-else name="plus" :size="16" :stroke="2.1" />
                 </span>
               </button>
@@ -187,6 +215,26 @@ const add = async (song) => {
 
 .search input::placeholder {
   color: var(--placeholder);
+}
+
+.batch {
+  flex: 0 0 auto;
+  margin-top: 10px;
+}
+
+.batch__btn {
+  width: 100%;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.batch__btn:disabled {
+  opacity: 0.5;
 }
 
 .list {
