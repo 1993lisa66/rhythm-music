@@ -1,0 +1,14 @@
+{
+  "tracks": [
+    { "id": "wanfeng", "size": "4.2 MB" },
+    { "id": "xiaoban", "size": "4.5 MB" },
+    { "id": "riluo", "size": "3.9 MB" },
+    { "id": "qinglang", "size": "4.4 MB" },
+    { "id": "huanghun", "size": "4.1 MB" },
+    { "id": "xinghe", "size": "4.0 MB" },
+    { "id": "shanye", "size": "4.6 MB" },
+    { "id": "chengshiye", "size": "4.3 MB" },
+    { "id": "manxialai", "size": "4.2 MB" },
+    { "id": "zaochun", "size": "4.4 MB" }
+  ]
+}

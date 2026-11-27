@@ -1,0 +1,180 @@
+/* =====================================================================
+   全局基础样式 / 设备外壳
+   ===================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: radial-gradient(120% 90% at 50% 0%, #f6efe4 0%, #e9e1d4 55%, #ded5c6 100%);
+  font-family: var(--font-cn);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* normalize.css 会给 h1 补 2em / 0.67em，这里统一交回组件控制 */
+h1,
+h2,
+h3,
+h4,
+p,
+figure {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+button {
+  font-family: inherit;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input {
+  font-family: inherit;
+  border: 0;
+  outline: 0;
+  background: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- 外壳 ---------- */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+}
+
+.device {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  flex: 0 0 auto;
+  border-radius: 44px;
+  overflow: hidden;
+  background: var(--bg-canvas);
+  box-shadow: 0 0 0 10px #f4eee3, 0 0 0 11px rgba(43, 31, 26, 0.08),
+    0 34px 90px rgba(43, 31, 26, 0.24);
+  isolation: isolate;
+}
+
+/* 沉浸式深色页（正在播放）时，状态栏区域也需要深色底 */
+.device.device--dark {
+  background: var(--dark-bg);
+}
+
+/* ---------- 页面滚动容器 ----------
+   top 让出状态栏 44px，底部由悬浮组件覆盖，
+   canvas 高度 = 844 - 44 = 800，坐标 = 设计稿 y - 44
+   ------------------------------------ */
+.page {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--sb-h);
+  bottom: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.page::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.page__canvas {
+  position: relative;
+  width: 100%;
+  height: 800px;
+}
+
+.page--dark {
+  background: var(--dark-bg);
+}
+
+/* ---------- 通用原子 ---------- */
+.abs {
+  position: absolute;
+}
+
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: var(--glass-border);
+}
+
+/* 毛玻璃降级：不支持 backdrop-filter 时给实色底 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--glass-bg-solid);
+  }
+}
+
+/* 可访问性：焦点可见 */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------- 真机 / 窄屏：铺满视口 ---------- */
+@media (max-width: 480px) {
+  .app-shell {
+    padding: 0;
+  }
+  .device {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .page__canvas {
+    height: 100%;
+    min-height: 800px;
+  }
+}
