@@ -1,6 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import Icon from './Icon.vue'
+import { state, toggle } from '@/store/player'
 
 const route = useRoute()
 const router = useRouter()
@@ -34,8 +35,14 @@ const go = (to) => {
       <span class="tab__label">{{ t.label }}</span>
     </button>
 
-    <button type="button" class="play" aria-label="打开正在播放" @click="go('/now')">
-      <Icon name="play" :size="20" />
+    <button
+      type="button"
+      class="play"
+      :class="{ 'play--pause': state.playing }"
+      :aria-label="state.playing ? '暂停' : '播放'"
+      @click="toggle"
+    >
+      <Icon :name="state.playing ? 'pause' : 'play'" :size="20" />
     </button>
   </nav>
 </template>
@@ -102,6 +109,11 @@ const go = (to) => {
 
 .play :deep(.ico) {
   transform: translateX(1px);
+}
+
+/* 暂停是两条竖线，不需要为三角形做视觉居中偏移 */
+.play--pause :deep(.ico) {
+  transform: none;
 }
 
 .play:active {

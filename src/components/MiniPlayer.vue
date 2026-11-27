@@ -22,8 +22,8 @@ const open = () => router.push('/now')
       <p class="mini__artist">{{ current.artist }} · {{ current.album }}</p>
     </div>
 
-    <button type="button" class="mini__play" :aria-label="state.playing ? '暂停' : '播放'"
-      @click.stop="toggle">
+    <button type="button" class="mini__play" :class="{ 'mini__play--pause': state.playing }"
+      :aria-label="state.playing ? '暂停' : '播放'" @click.stop="toggle">
       <Icon :name="state.playing ? 'pause' : 'play'" :size="compact ? 13 : 14" />
     </button>
   </div>
@@ -123,6 +123,10 @@ const open = () => router.push('/now')
 
 .mini__play :deep(.ico) {
   transform: translateX(1px);
+}
+
+.mini__play--pause :deep(.ico) {
+  transform: none;
 }
 
 .mini__play:active {
