@@ -65,6 +65,9 @@ REPEAT_MODES = ("all", "one", "off")
 # 首屏对齐设计稿：晚风 01:28 / 03:42
 DEFAULT_POSITION = 88
 
+# 启动时是否自动写入内置曲库。清空曲库后设为 0，避免重启把 929 首种子数据灌回来。
+AUTO_SEED = os.getenv("RHYTHM_AUTO_SEED", "1").strip().lower() not in ("0", "false", "no", "off")
+
 # 阿里云 OSS：静态资源（封面 / 音频）存储，密钥只从环境变量或 .env 读取。
 # Bucket 为私有读，所有资源地址都由后端现签（URL 带 Expires + Signature），
 # 前端拿到的依旧是普通字符串，接口形状不变。

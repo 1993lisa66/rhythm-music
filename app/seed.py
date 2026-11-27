@@ -260,6 +260,9 @@ def seed(reset: bool = False) -> bool:
 
 
 def ensure_seed() -> None:
+    """启动时兜底灌数据；RHYTHM_AUTO_SEED=0 时跳过（清空曲库后必须关掉，否则会被灌回来）。"""
+    if not config.AUTO_SEED:
+        return
     seed(reset=False)
 
 
