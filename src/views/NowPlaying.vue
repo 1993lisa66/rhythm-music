@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import ActionSheet from '@/components/ActionSheet.vue'
+import PickPlaylistSheet from '@/components/PickPlaylistSheet.vue'
 import { api } from '@/api/client'
 import { removeSongLocal } from '@/store/data'
 import { settings } from '@/store/settings'
@@ -30,6 +31,7 @@ const router = useRouter()
 const barRef = ref(null)
 const dragging = ref(false)
 const sheet = ref(false)
+const pickPlaylist = ref(false)
 /* 删除是破坏性操作：在同一个面板里切到二次确认态，避免误触 */
 const confirming = ref(false)
 const removing = ref(false)
@@ -38,6 +40,7 @@ const back = () => goBack(router, '/discover')
 
 const actions = computed(() => [
   { key: 'like', label: liked.value ? '取消收藏' : '收藏歌曲', icon: 'heart', active: liked.value },
+  { key: 'add-to-playlist', label: '添加到歌单', icon: 'plus' },
   { key: 'queue', label: '播放队列', icon: 'queue' },
   { key: 'album', label: '查看专辑', icon: 'note' },
   { key: 'share', label: '分享歌曲', icon: 'share' },
@@ -101,6 +104,8 @@ const onPick = async (key) => {
   if (key === 'like') {
     toggleLike()
     toast(liked.value ? '已收藏' : '已取消收藏')
+  } else if (key === 'add-to-playlist') {
+    pickPlaylist.value = true
   } else if (key === 'queue') {
     openQueue()
   } else if (key === 'album') {
@@ -303,6 +308,13 @@ const onKey = (e) => {
       :cancel-text="sheetCancel"
       @pick="onPick"
       @close="closeSheet"
+    />
+
+    <PickPlaylistSheet
+      :open="pickPlaylist"
+      :song-id="current.id"
+      :song-title="current.title"
+      @close="pickPlaylist = false"
     />
   </div>
 </template>
