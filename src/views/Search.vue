@@ -311,9 +311,21 @@ watch(
   left: 24px;
   right: 24px;
   top: 154px;
+  /* 热搜词数量变化时只允许两行，超出横向滑动，避免挤占下方「猜你喜欢」 */
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px 10px;
+  flex-wrap: nowrap;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.chips::-webkit-scrollbar {
+  height: 0;
+}
+
+.chips .chip {
+  flex: 0 0 auto;
 }
 
 .chip {
@@ -346,6 +358,19 @@ watch(
 .rec__row {
   display: flex;
   gap: 14px;
+  /* 卡片数量变化时允许横向滑动，避免撑出设备外壳 */
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.rec__row::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.rec__row .rcard {
+  flex: 0 0 152px;
 }
 
 .rec__row--sm {
