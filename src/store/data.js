@@ -149,6 +149,20 @@ export async function refreshProfile() {
   return data.profile
 }
 
+/** 数据源切换后重新拉取带资源地址的页面数据 */
+export async function refreshDataSources() {
+  const [songs, discover, library, recommend] = await Promise.all([
+    api.songs({ limit: 2000 }),
+    api.discover(),
+    api.library(),
+    api.recommend()
+  ])
+  indexSongs(songs.items)
+  data.discover = discover
+  data.library = library
+  data.recommend = recommend
+}
+
 export async function refreshSettings() {
   data.settings = await api.settings()
   return data.settings

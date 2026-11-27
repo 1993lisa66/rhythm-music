@@ -7,13 +7,16 @@ export const QUALITIES = ['标准', '高品质', '无损']
 
 export const settings = reactive({
   quality: '高品质',
-  showLyrics: true
+  showLyrics: true,
+  // 资源数据源：server=服务器本地静态文件，oss=私有 Bucket 签名地址
+  assetSource: 'server'
 })
 
 function apply(payload) {
   if (!payload) return
   settings.quality = payload.quality
   settings.showLyrics = !!payload.showLyrics
+  settings.assetSource = payload.assetSource || 'server'
 }
 
 export function applySettings(payload) {
@@ -21,7 +24,7 @@ export function applySettings(payload) {
 }
 
 export function resetSettings() {
-  apply({ quality: '高品质', showLyrics: true })
+  apply({ quality: '高品质', showLyrics: true, assetSource: 'server' })
 }
 
 export async function loadSettings() {
