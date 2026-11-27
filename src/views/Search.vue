@@ -175,24 +175,26 @@ watch(
 <template>
   <div class="page">
     <div class="page__canvas">
-      <div class="sbox">
-        <Icon name="search" :size="16" :stroke="1.9" />
-        <input
-          ref="inputRef"
-          v-model="query"
-          class="sbox__input"
-          type="text"
-          inputmode="search"
-          enterkeyhint="search"
-          :placeholder="hot.placeholder"
-          aria-label="搜索音乐"
-        />
-        <button v-if="query" type="button" class="sbox__clear" aria-label="清空" @click="query = ''">
-          <Icon name="close" :size="13" :stroke="2" />
-        </button>
-      </div>
+      <div class="sbar">
+        <div class="sbox">
+          <Icon class="sbox__icon" name="search" :size="17" :stroke="1.9" />
+          <input
+            ref="inputRef"
+            v-model="query"
+            class="sbox__input"
+            type="text"
+            inputmode="search"
+            enterkeyhint="search"
+            :placeholder="hot.placeholder"
+            aria-label="搜索音乐"
+          />
+          <button v-if="query" type="button" class="sbox__clear" aria-label="清空" @click="query = ''">
+            <Icon name="close" :size="12" :stroke="2.2" />
+          </button>
+        </div>
 
-      <button type="button" class="cancel" @click="cancel">{{ hot.cancel }}</button>
+        <button type="button" class="cancel" @click="cancel">{{ hot.cancel }}</button>
+      </div>
 
       <template v-if="!hasQuery">
         <div class="browse">
@@ -341,34 +343,77 @@ watch(
 </template>
 
 <style scoped>
-/* 搜索框 300 × 48 */
-.sbox {
+/* 搜索条：整行 flex，胶囊自适应宽度 + 取消按钮固定右侧 */
+.sbar {
   position: absolute;
   left: 24px;
-  top: 30px;
-  width: 300px;
+  right: 12px;
+  top: 28px;
   height: 48px;
-  border-radius: var(--r-btn);
-  background: var(--surface);
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 0 16px;
+  gap: 4px;
+}
+
+.sbox {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1.5px solid rgba(224, 120, 86, 0.13);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 7px 0 16px;
   color: var(--placeholder);
   box-shadow: 0 2px 10px rgba(224, 120, 86, 0.06);
-  transition: box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .sbox:focus-within {
-  box-shadow: 0 0 0 2px rgba(224, 120, 86, 0.22);
+  border-color: rgba(224, 120, 86, 0.55);
+  box-shadow: 0 0 0 4px rgba(224, 120, 86, 0.1), 0 6px 18px rgba(224, 120, 86, 0.12);
+}
+
+.sbox__icon {
+  flex: 0 0 auto;
+  transition: color 0.2s ease;
+}
+
+.sbox:focus-within .sbox__icon {
+  color: var(--primary);
 }
 
 .sbox__input {
   flex: 1 1 auto;
   min-width: 0;
+  height: 100%;
   font-size: 14px;
-  line-height: 18px;
+  line-height: 1.2;
   color: var(--ink);
+  caret-color: var(--primary);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* 焦点只体现在外层胶囊上，输入框本身不再画任何边框 */
+.sbox__input:focus,
+.sbox__input:focus-visible {
+  outline: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.sbox__input::-webkit-search-cancel-button,
+.sbox__input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  display: none;
 }
 
 .sbox__input::placeholder {
@@ -376,25 +421,45 @@ watch(
 }
 
 .sbox__clear {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--surface-soft);
   color: var(--ink-sub);
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.sbox__clear:hover {
+  background: rgba(224, 120, 86, 0.14);
+  color: var(--primary);
+}
+
+.sbox__clear:active {
+  transform: scale(0.9);
 }
 
 .cancel {
-  position: absolute;
-  right: 24px;
-  top: 30px;
-  height: 48px;
-  font-size: 15px;
-  line-height: 48px;
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 36px;
   color: var(--primary);
-  padding-left: 8px;
+  background: rgba(224, 120, 86, 0.1);
+  transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.cancel:hover {
+  background: rgba(224, 120, 86, 0.17);
+}
+
+.cancel:active {
+  transform: scale(0.96);
 }
 
 .sec {
