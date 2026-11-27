@@ -144,17 +144,19 @@ watch(
           <button type="button" class="sec__more" @click="rotateHot">{{ hot.refresh }}</button>
         </div>
 
-        <div class="chips">
-          <button
-            v-for="item in hotItems"
-            :key="item.text"
-            type="button"
-            class="chip"
-            :style="{ background: TONE[item.tone] }"
-            @click="pickHot(item)"
-          >
-            {{ item.text }}
-          </button>
+        <div class="chips-wrap">
+          <div class="chips">
+            <button
+              v-for="item in hotItems"
+              :key="item.text"
+              type="button"
+              class="chip"
+              :style="{ background: TONE[item.tone] }"
+              @click="pickHot(item)"
+            >
+              {{ item.text }}
+            </button>
+          </div>
         </div>
 
         <h2 class="sec sec--rec">{{ recommend.title }}</h2>
@@ -306,18 +308,40 @@ watch(
 }
 
 /* 热搜 Chip：36 高 r18 */
+/* 外层定位 + 右侧渐隐，让被裁切的热搜词看起来是「可滑动」而非溢出错位 */
+.chips-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 154px;
+  height: 36px;
+  pointer-events: none;
+}
+
+.chips-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, transparent, var(--bg-canvas, #fffdf8));
+  pointer-events: none;
+}
+
 .chips {
   position: absolute;
   left: 24px;
   right: 24px;
-  top: 154px;
-  /* 热搜词数量变化时只允许两行，超出横向滑动，避免挤占下方「猜你喜欢」 */
+  top: 0;
+  height: 36px;
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
   overflow-x: auto;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
+  pointer-events: auto;
 }
 
 .chips::-webkit-scrollbar {
