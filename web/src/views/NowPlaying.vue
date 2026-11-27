@@ -177,18 +177,56 @@ const onKey = (e) => {
     toggle()
   }
 }
+
+/* 下滑收起：iOS 原生播放页的手势，缺失时会让人「找不到出口」 */
+const pullY = ref(0)
+const pulling = ref(false)
+let pullStartY = 0
+let pullStartAt = 0
+
+const onTouchStart = (e) => {
+  const page = e.currentTarget
+  pullStartY = e.touches[0].clientY
+  pullStartAt = Date.now()
+  pulling.value = !page || page.scrollTop <= 0
+}
+
+const onTouchMove = (e) => {
+  if (!pulling.value) return
+  const dy = e.touches[0].clientY - pullStartY
+  pullY.value = dy > 0 ? Math.min(dy, 320) : 0
+}
+
+const onTouchEnd = () => {
+  const dy = pullY.value
+  const elapsed = Date.now() - pullStartAt
+  pulling.value = false
+  pullY.value = 0
+  /* 位移够长，或快速一甩，都收起 */
+  if (dy > 130 || (dy > 60 && elapsed < 260)) back()
+}
 </script>
 
 <template>
-  <div class="page page--dark">
-    <div class="page__canvas">
-      <button type="button" class="nav nav--back" aria-label="返回" @click="back">
+  <div
+    class="page page--dark"
+    @touchstart.passive="onTouchStart"
+    @touchmove.passive="onTouchMove"
+    @touchend="onTouchEnd"
+    @touchcancel="onTouchEnd"
+  >
+    <div
+      class="page__canvas np-canvas"
+      :class="{ 'np-canvas--dragging': pulling }"
+      :style="pullY ? { transform: `translateY(${pullY}px)` } : null"
+    >
+      <button type="button" class="nav nav--back hit" aria-label="返回" @click="back">
         <Icon name="back" :size="22" :stroke="2" />
       </button>
       <p class="nav__title">正在播放</p>
       <button
         type="button"
-        class="nav nav--more"
+        class="nav nav--more hit"
         aria-label="更多操作"
         aria-haspopup="dialog"
         @click="openSheet"
@@ -211,7 +249,7 @@ const onKey = (e) => {
 
       <button
         type="button"
-        class="like"
+        class="like hit"
         :class="{ 'like--on': liked }"
         :aria-pressed="liked"
         :aria-label="liked ? '取消收藏' : '收藏'"
@@ -244,7 +282,7 @@ const onKey = (e) => {
       <div class="controls">
         <button
           type="button"
-          class="ctrl ctrl--shuffle"
+          class="ctrl ctrl--shuffle hit"
           :class="{ 'ctrl--on': state.shuffle }"
           :aria-pressed="state.shuffle"
           aria-label="随机播放"
@@ -253,7 +291,7 @@ const onKey = (e) => {
           <Icon name="shuffle" :size="22" :stroke="1.7" />
         </button>
 
-        <button type="button" class="ctrl ctrl--prev" aria-label="上一首" @click="prev">
+        <button type="button" class="ctrl ctrl--prev hit" aria-label="上一首" @click="prev">
           <Icon name="prev" :size="24" />
         </button>
 
@@ -266,13 +304,13 @@ const onKey = (e) => {
           <Icon :name="state.playing ? 'pause' : 'play'" :size="26" />
         </button>
 
-        <button type="button" class="ctrl ctrl--next" aria-label="下一首" @click="next(false)">
+        <button type="button" class="ctrl ctrl--next hit" aria-label="下一首" @click="next(false)">
           <Icon name="next" :size="24" />
         </button>
 
         <button
           type="button"
-          class="ctrl ctrl--repeat"
+          class="ctrl ctrl--repeat hit"
           :class="{ 'ctrl--on': state.repeat !== 'off' }"
           :aria-label="repeatLabel"
           :title="repeatLabel"
@@ -289,20 +327,20 @@ const onKey = (e) => {
             <Icon name="quote" :size="16" :stroke="1.8" />
             歌词
           </span>
-          <button type="button" class="lyrics__more" @click="openLyrics">展开 ›</button>
+          <button type="button" class="lyrics__more hit" @click="openLyrics">展开 ›</button>
         </div>
         <p class="lyrics__line lyrics__line--prev">{{ prevLine }}</p>
         <p class="lyrics__line lyrics__line--cur">{{ curLine }}</p>
       </div>
 
       <div class="tools">
-        <button type="button" class="tool" aria-label="播放队列" @click="openQueue">
+        <button type="button" class="tool hit" aria-label="播放队列" @click="openQueue">
           <Icon name="queue" :size="20" :stroke="1.8" />
           <span>队列</span>
         </button>
         <button
           type="button"
-          class="tool tool--on"
+          class="tool tool--on hit"
           :aria-pressed="liked"
           aria-label="收藏"
           @click="toggleLike()"
@@ -310,7 +348,7 @@ const onKey = (e) => {
           <Icon name="heart" :size="20" :stroke="1.8" :filled="liked" />
           <span>收藏</span>
         </button>
-        <button type="button" class="tool" aria-label="更多" @click="openSheet">
+        <button type="button" class="tool hit" aria-label="更多" @click="openSheet">
           <Icon name="more" :size="20" />
           <span>更多</span>
         </button>
@@ -337,6 +375,14 @@ const onKey = (e) => {
 </template>
 
 <style scoped>
+.np-canvas {
+  transition: transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.np-canvas--dragging {
+  transition: none;
+}
+
 .nav {
   position: absolute;
   top: 36px;

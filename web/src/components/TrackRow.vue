@@ -34,7 +34,7 @@ const emit = defineEmits(['select', 'remove'])
     <button
       v-if="removable"
       type="button"
-      class="track__rm"
+      class="track__rm hit"
       aria-label="从歌单移除"
       @click.stop="emit('remove')"
     >

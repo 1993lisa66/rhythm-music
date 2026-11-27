@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import TrackRow from '@/components/TrackRow.vue'
@@ -165,19 +165,64 @@ const onTracksAdded = async () => {
   await syncLists()
 }
 
-const removeTrack = async (track) => {
-  if (submitting.value) return
-  submitting.value = true
+/* 行内「移除」：先本地生效并给 5 秒撤销窗口，超时才真正落库。
+   这样误触（28px 图标紧贴歌曲行）不会直接丢数据，也不用弹确认打断听歌。 */
+let pendingRemoval = null
+
+const commitRemoval = async (removal) => {
   try {
-    playlist.value = await api.removePlaylistTrack(detail.value.id, track.id)
+    playlist.value = await api.removePlaylistTrack(removal.playlistId, removal.songId)
     await syncLists()
-    toast(`已移出《${track.title}》`)
   } catch (error) {
     toast(error?.message || '移出失败')
-  } finally {
-    submitting.value = false
+    load(removal.playlistId)
   }
 }
+
+const flushRemoval = () => {
+  if (!pendingRemoval) return
+  const removal = pendingRemoval
+  pendingRemoval = null
+  window.clearTimeout(removal.timer)
+  commitRemoval(removal)
+}
+
+const removeTrack = (track) => {
+  const snapshot = playlist.value
+  if (!snapshot || !owned.value) return
+  // 上一条还没撤销就先落库，避免两次移除互相覆盖
+  flushRemoval()
+
+  const playlistId = snapshot.id
+  playlist.value = {
+    ...snapshot,
+    tracks: snapshot.tracks.filter((t) => t.id !== track.id),
+    count: Math.max(0, (snapshot.count ?? snapshot.tracks.length) - 1),
+    trackCount: Math.max(0, (snapshot.trackCount ?? snapshot.tracks.length) - 1)
+  }
+
+  const removal = { playlistId, songId: track.id, timer: null }
+  removal.timer = window.setTimeout(() => {
+    if (pendingRemoval === removal) {
+      pendingRemoval = null
+      commitRemoval(removal)
+    }
+  }, 5000)
+  pendingRemoval = removal
+
+  toast(`已移出《${track.title}》`, {
+    actionLabel: '撤销',
+    action: () => {
+      const current = pendingRemoval
+      if (current) window.clearTimeout(current.timer)
+      pendingRemoval = null
+      playlist.value = snapshot
+      toast('已撤销')
+    }
+  })
+}
+
+onUnmounted(flushRemoval)
 
 const onPick = async (key) => {
   if (key === 'keep') {
@@ -221,13 +266,13 @@ const onPick = async (key) => {
 <template>
   <div class="page">
     <div class="page__canvas playlist">
-      <button type="button" class="nav nav--back" aria-label="返回" @click="back">
+      <button type="button" class="nav nav--back hit" aria-label="返回" @click="back">
         <Icon name="back" :size="22" :stroke="2" />
       </button>
 
       <button
         type="button"
-        class="nav nav--more"
+        class="nav nav--more hit"
         aria-label="更多操作"
         aria-haspopup="dialog"
         @click="openSheet"

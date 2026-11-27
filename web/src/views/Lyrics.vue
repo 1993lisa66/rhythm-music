@@ -52,6 +52,17 @@ watch(lyricIndex, async (i) => {
   }
 })
 
+/* 歌词开头的「作词：」「编曲：」以及「歌手 - 曲名」这类制作信息，
+   不该当成歌词逐行点亮（看起来像识别错了），单独降级显示 */
+const CREDIT_RE = /^\s*[\u4e00-\u9fa5A-Za-z0-9（）()·]{1,8}\s*[:：]/
+const isCredit = (text) => {
+  if (!text) return false
+  const title = current.value?.title
+  if (title && text.includes(' - ') && text.trim().endsWith(title)) return true
+  return CREDIT_RE.test(text)
+}
+const isHighlight = (i) => i === lyricIndex.value && !isCredit(lines.value[i]?.text)
+
 const pick = (line) => {
   const dur = current.value.duration || 1
   seek(line.t / dur)
@@ -62,14 +73,14 @@ const pick = (line) => {
   <div class="page page--dark">
     <div class="page__canvas lyrics">
       <div class="head">
-        <button type="button" class="head__btn" aria-label="返回" @click="back">
+        <button type="button" class="head__btn hit" aria-label="返回" @click="back">
           <Icon name="back" :size="22" :stroke="2" />
         </button>
         <div class="head__text">
           <p class="head__title">{{ current.title }}</p>
           <p class="head__sub">{{ current.artist }}</p>
         </div>
-        <span class="head__btn" aria-hidden="true"></span>
+        <span class="head__btn hit" aria-hidden="true"></span>
       </div>
 
       <div v-if="lines.length" class="lines">
@@ -79,7 +90,11 @@ const pick = (line) => {
           :ref="(el) => setRef(el, i)"
           type="button"
           class="line"
-          :class="{ 'line--on': i === lyricIndex, 'line--near': Math.abs(i - lyricIndex) === 1 }"
+          :class="{
+            'line--credit': isCredit(line.text),
+            'line--on': isHighlight(i),
+            'line--near': !isCredit(line.text) && Math.abs(i - lyricIndex) === 1
+          }"
           @click="pick(line)"
         >
           {{ line.text }}
@@ -95,7 +110,7 @@ const pick = (line) => {
       </div>
 
       <div class="bar">
-        <button type="button" class="bar__ctrl" aria-label="上一首" @click="prev">
+        <button type="button" class="bar__ctrl hit" aria-label="上一首" @click="prev">
           <Icon name="prev" :size="22" />
         </button>
         <button
@@ -106,7 +121,7 @@ const pick = (line) => {
         >
           <Icon :name="state.playing ? 'pause' : 'play'" :size="22" />
         </button>
-        <button type="button" class="bar__ctrl" aria-label="下一首" @click="next(false)">
+        <button type="button" class="bar__ctrl hit" aria-label="下一首" @click="next(false)">
           <Icon name="next" :size="22" />
         </button>
       </div>
@@ -197,6 +212,14 @@ const pick = (line) => {
   text-align: center;
   color: rgba(255, 243, 224, 0.34);
   transition: color 0.24s ease, transform 0.24s ease;
+}
+
+/* 制作信息：小一号、更淡，不参与高亮 */
+.line--credit {
+  font-size: 12.5px;
+  line-height: 20px;
+  color: rgba(255, 243, 224, 0.24);
+  letter-spacing: 0.2px;
 }
 
 .line--near {

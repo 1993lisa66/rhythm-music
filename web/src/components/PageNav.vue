@@ -14,7 +14,7 @@ const back = () => goBack(router, props.fallback)
 
 <template>
   <div class="pnav">
-    <button type="button" class="pnav__back" aria-label="返回" @click="back">
+    <button type="button" class="pnav__back hit" aria-label="返回" @click="back">
       <Icon name="back" :size="22" :stroke="2" />
     </button>
     <h1 class="pnav__title">{{ title }}</h1>
@@ -62,7 +62,7 @@ const back = () => goBack(router, props.fallback)
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   font-size: 13px;
   color: var(--primary);
 }

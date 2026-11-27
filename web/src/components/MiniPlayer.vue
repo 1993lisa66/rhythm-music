@@ -23,8 +23,8 @@ const open = () => router.push('/now')
     </div>
 
     <!-- 播放/暂停交给底部 TabBar 中央键，这里只保留切歌，避免两个圆形按钮同屏 -->
-    <button type="button" class="mini__next" aria-label="下一首" @click.stop="next(false)">
-      <Icon name="next" :size="compact ? 13 : 14" />
+    <button type="button" class="mini__next hit" aria-label="下一首" @click.stop="next(false)">
+      <Icon name="next" :size="14" />
     </button>
 
     <span class="mini__bar" aria-hidden="true">
@@ -59,6 +59,11 @@ const open = () => router.push('/now')
 .mini--compact {
   bottom: calc(16px + var(--sab, 0px));
   padding-left: 20px;
+}
+
+/* 毛玻璃太透会让列表文字透到标题上，看起来像渲染重叠 */
+.mini {
+  background: rgba(255, 250, 242, 0.86);
 }
 
 .mini__cover {

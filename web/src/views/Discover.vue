@@ -21,7 +21,12 @@ const EMPTY = {
 
 const discover = computed(() => data.discover || EMPTY)
 const featured = computed(() => discover.value.featured.playlist)
-const recent = computed(() => discover.value.recent.items)
+/* 正在播放的那首已经在下方悬浮条上了，列表里再出现一次会显得重复 */
+const recent = computed(() => {
+  const items = discover.value.recent.items || []
+  const filtered = state.playing ? items.filter((s) => s.id !== current.value.id) : items
+  return filtered.length ? filtered : items
+})
 const recentIds = computed(() => recent.value.map((s) => s.id))
 
 const TONE = { sage: 'var(--sage)', honey: 'var(--honey)', plum: 'var(--plum)' }

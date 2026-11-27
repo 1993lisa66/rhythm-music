@@ -37,7 +37,7 @@ onMounted(async () => {
     <div class="page__canvas">
       <h1 class="title">{{ profile.title }}</h1>
 
-      <button type="button" class="settings" aria-label="设置" @click="openSettings">
+      <button type="button" class="settings hit" aria-label="设置" @click="openSettings">
         <Icon name="settings" :size="22" :stroke="1.7" />
       </button>
 

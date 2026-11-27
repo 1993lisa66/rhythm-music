@@ -130,11 +130,17 @@ ul {
   height: 0;
 }
 
-/* 悬浮条会盖住画布底部，补一段可滚动余量，保证最后一行能滚到bar上方 */
+/* 悬浮条会盖住画布底部，补一段可滚动余量，保证最后一行能滚到bar上方。
+   画布本身没超屏时（page--flush，由 App.vue 量测后打标）不需要这段留白，
+   否则短页面会多出 100 多像素的「假滚动」。 */
 .page:not(.page--dark)::after {
   content: '';
   display: block;
   height: calc(160px + var(--sab));
+}
+
+.page:not(.page--dark).page--flush::after {
+  display: none;
 }
 
 .page__canvas {
@@ -150,6 +156,22 @@ ul {
 /* ---------- 通用原子 ---------- */
 .abs {
   position: absolute;
+}
+
+/* 触控热区：视觉尺寸不动，用伪元素把可点范围补到 44×44（iOS HIG 下限）。
+   22~26px 的图标按钮直接加这个类即可，不会影响布局。 */
+.hit {
+  position: relative;
+}
+
+.hit::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .num {
@@ -223,7 +245,7 @@ textarea:focus-visible {
   :root {
     --sb-h: var(--sat);
     --nav-b: calc(12px + var(--sab));
-    --mini-b: calc(84px + var(--sab));
+    --mini-b: calc(88px + var(--sab));
   }
 
   .page {

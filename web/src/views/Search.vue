@@ -108,9 +108,35 @@ const hasQuery = computed(() => query.value.trim().length > 0)
 const bigCards = computed(() => recommend.value.items.filter((i) => i.size === 'lg'))
 const smallCards = computed(() => recommend.value.items.filter((i) => i.size !== 'lg'))
 
+/* 「取消」只在编辑中或有内容时出现：空闲态挂着它显得多余 */
+const focused = ref(false)
+const cancelVisible = ref(false)
+let blurTimer = null
+const onFocus = () => {
+  focused.value = true
+  if (blurTimer) window.clearTimeout(blurTimer)
+  cancelVisible.value = true
+}
+const onBlur = () => {
+  focused.value = false
+  /* 延后隐藏，否则点「取消」时按钮会先被移除，点击落空 */
+  blurTimer = window.setTimeout(() => {
+    if (!query.value) cancelVisible.value = false
+  }, 160)
+}
+
 const cancel = () => {
-  if (query.value) query.value = ''
-  else goBack(router, '/discover')
+  if (query.value) {
+    query.value = ''
+    results.value = []
+    artists.value = []
+    playlists.value = []
+    /* 地址栏的 ?q= 也要清掉，否则刷新会把上次的搜索复活 */
+    router.replace({ query: {} })
+    inputRef.value?.blur()
+    return
+  }
+  goBack(router, '/discover')
 }
 
 const pickHot = (item) => {
@@ -187,13 +213,15 @@ watch(
             enterkeyhint="search"
             :placeholder="hot.placeholder"
             aria-label="搜索音乐"
+            @focus="onFocus"
+            @blur="onBlur"
           />
           <button v-if="query" type="button" class="sbox__clear" aria-label="清空" @click="query = ''">
             <Icon name="close" :size="12" :stroke="2.2" />
           </button>
         </div>
 
-        <button type="button" class="cancel" @click="cancel">{{ hot.cancel }}</button>
+        <button v-if="cancelVisible" type="button" class="cancel hit" @click="cancel">{{ hot.cancel }}</button>
       </div>
 
       <template v-if="!hasQuery">
@@ -550,15 +578,20 @@ watch(
 
 /* 热搜 Chip：36 高 r18，自动换行 */
 .chips {
-  display: flex;
-  flex-wrap: wrap;
+  /* 两列等分：词长不一时不会出现「最后一个独占一行」的孤行 */
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
 }
 
 .chip {
-  height: 36px;
-  padding: 0 25px;
+  height: 40px;
+  padding: 0 16px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border-radius: var(--r-chip);
   color: #fff;
   font-size: 13px;

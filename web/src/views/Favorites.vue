@@ -83,7 +83,7 @@ onMounted(async () => {
           </button>
           <button
             type="button"
-            class="item__heart"
+            class="item__heart hit"
             :aria-label="`取消收藏 ${song.title}`"
             @click="unfavorite(song)"
           >

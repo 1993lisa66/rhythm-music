@@ -68,7 +68,7 @@ onMounted(async () => {
     <div class="page__canvas recent">
       <PageNav title="最近播放" fallback="/profile">
         <template #right>
-          <button type="button" class="clear" :disabled="!total" @click="clear">清空</button>
+          <button type="button" class="clear hit" :disabled="!total" @click="clear">清空</button>
         </template>
       </PageNav>
 

@@ -81,6 +81,9 @@ const go = (to) => {
 .tab {
   flex: 1 1 0;
   min-width: 0;
+  /* 图标 20 + 间距 4 + 文字 12 + 下内边距 = 44px，满足最小热区 */
+  min-height: 44px;
+  padding-bottom: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;

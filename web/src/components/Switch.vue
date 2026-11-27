@@ -11,7 +11,7 @@ const emit = defineEmits(['update:modelValue'])
   <button
     type="button"
     role="switch"
-    class="sw"
+    class="sw hit"
     :class="{ 'sw--on': modelValue }"
     :aria-checked="modelValue"
     :aria-label="label"

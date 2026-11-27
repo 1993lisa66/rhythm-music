@@ -212,6 +212,9 @@ const confirmRemove = async () => {
 .link {
   font-size: 13px;
   line-height: 22px;
+  /* 22 + 上下各 11 = 44px 最小热区，视觉位置不变 */
+  padding: 11px 12px;
+  margin: -11px -12px;
   color: var(--ink-sub);
   transition: color 0.16s ease;
 }

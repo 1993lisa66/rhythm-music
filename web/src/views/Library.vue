@@ -25,9 +25,15 @@ const library = computed(() => data.library || EMPTY)
 const tab = ref('')
 const activeTab = computed(() => tab.value || library.value.tabs[0] || '歌曲')
 
-/* 列表区标题跟随当前 tab，而不是固定显示「最近添加」 */
-const TAB_TITLES = { 歌曲: '全部歌曲', 歌单: '全部歌单', 专辑: '全部专辑' }
-const listTitle = computed(() => TAB_TITLES[activeTab.value] || library.value.recent.title)
+/* 列表区标题跟随当前 tab，并带上数量，避免和 tab 标签重复报同一个词 */
+const listTitle = computed(() => {
+  if (activeTab.value === '歌曲') return `全部 ${songRows.value.length} 首`
+  if (activeTab.value === '歌单') return `我的歌单 ${playlistRows.value.length} 个`
+  if (activeTab.value === '专辑') return `全部专辑 ${albumRows.value.length} 张`
+  return library.value.recent.title
+})
+/* 歌曲 tab 本身已经是全量列表，「全部」入口没有新内容，不再显示 */
+const moreLabel = computed(() => (activeTab.value === '歌曲' ? '' : library.value.recent.more))
 
 /* 「全部 ›」按当前 tab 分流：歌曲 → 全部歌曲、歌单 → 我的歌单、专辑 → 全部专辑 */
 const MORE_ROUTES = { 歌曲: '/songs', 歌单: '/mylists', 专辑: '/albums' }
@@ -166,7 +172,7 @@ onMounted(async () => {
       <SectionHeader
         class="sec sec--recent"
         :title="listTitle"
-        :more="library.recent.more"
+        :more="moreLabel"
         @more="openMore"
       />
 

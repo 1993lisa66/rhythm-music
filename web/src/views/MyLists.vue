@@ -51,7 +51,7 @@ onMounted(async () => {
     <div class="page__canvas mylists">
       <PageNav title="我的歌单" fallback="/profile">
         <template #right>
-          <button type="button" class="new" @click="openCreate">
+          <button type="button" class="new hit" @click="openCreate">
             <Icon name="plus" :size="14" :stroke="2.2" />
             <span>新建</span>
           </button>

@@ -11,7 +11,14 @@ import { coverStyle } from '@/utils/format'
 const router = useRouter()
 
 const queueTotal = computed(() => queueSongs.value.length)
-const remainText = computed(() => `${queueTotal.value} 首`)
+
+/* 「接下来」只列当前曲目之后的歌 —— 正在播放的已经在上面单独成卡，
+   同一首歌出现两次会让人分不清点 × 是移出队列还是切歌 */
+const upNext = computed(() => {
+  const start = Math.max(0, state.index) + 1
+  return queueSongs.value.slice(start).map((song, i) => ({ song, index: start + i }))
+})
+const remainText = computed(() => `${upNext.value.length} 首`)
 
 const jump = (index) => playAt(index)
 
@@ -50,7 +57,7 @@ const openNow = () => router.push('/now')
     <div class="page__canvas queue">
       <PageNav title="播放队列" fallback="/discover">
         <template #right>
-          <button type="button" class="clear" @click="clear">清空</button>
+          <button type="button" class="clear hit" @click="clear">清空</button>
         </template>
       </PageNav>
 
@@ -72,26 +79,23 @@ const openNow = () => router.push('/now')
         <span class="count num">{{ remainText }}</span>
       </div>
 
-      <ul class="list">
-        <li v-for="(song, index) in queueSongs" :key="song.id + index" class="item">
-          <button type="button" class="item__main" @click="jump(index)">
-            <span class="item__idx num" :class="{ 'item__idx--on': index === state.index }">
-              <Icon v-if="index === state.index" name="note" :size="14" :stroke="1.8" />
-              <template v-else>{{ index + 1 }}</template>
-            </span>
-            <span class="item__cover" :style="coverStyle(song.cover)"></span>
+      <ul v-if="upNext.length" class="list">
+        <li v-for="(item, i) in upNext" :key="item.song.id + item.index" class="item">
+          <button type="button" class="item__main" @click="jump(item.index)">
+            <span class="item__idx num">{{ String(i + 1).padStart(2, '0') }}</span>
+            <span class="item__cover" :style="coverStyle(item.song.cover)"></span>
             <span class="item__text">
-              <span class="item__title" :class="{ 'item__title--on': index === state.index }">
-                {{ song.title }}
-              </span>
-              <span class="item__sub">{{ song.artist }}</span>
+              <span class="item__title">{{ item.song.title }}</span>
+              <span class="item__sub">{{ item.song.artist }}</span>
             </span>
           </button>
-          <button type="button" class="item__del" aria-label="从队列移除" @click="remove(index)">
+          <button type="button" class="item__del hit" aria-label="从队列移除" @click="remove(item.index)">
             <Icon name="close" :size="14" :stroke="2" />
           </button>
         </li>
       </ul>
+
+      <p v-else class="list__empty">后面没有待播歌曲了，去乐库添几首吧</p>
     </div>
 
     <ActionSheet
@@ -106,6 +110,13 @@ const openNow = () => router.push('/now')
 </template>
 
 <style scoped>
+.list__empty {
+  margin: 8px 4px 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--placeholder);
+}
+
 .queue {
   height: auto;
   min-height: 800px;
