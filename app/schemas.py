@@ -321,11 +321,14 @@ class SettingsOut(CamelModel):
     quality: str
     qualities: list[str]
     show_lyrics: bool
+    asset_source: str
+    asset_sources: list[str]
 
 
 class SettingsPatch(CamelModel):
     quality: Literal["标准", "高品质", "无损"] | None = None
     show_lyrics: bool | None = None
+    asset_source: Literal["server", "oss"] | None = None
 
 
 # ---------------------------------------------------------------- 发现 / 乐库

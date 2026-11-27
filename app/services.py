@@ -34,6 +34,8 @@ from .models import (
 DEFAULT_SETTINGS: dict[str, object] = {
     "quality": "高品质",
     "show_lyrics": True,
+    # 资源数据源：server=服务器本地静态文件（默认），oss=私有 Bucket 签名地址
+    "asset_source": config.DEFAULT_ASSET_SOURCE,
 }
 
 
@@ -184,10 +186,13 @@ def _write_setting(db: Session, user_id: str, key: str, value: object) -> None:
 
 
 def settings_payload(db: Session, user_id: str) -> dict:
+    source = _read_setting(db, user_id, "asset_source")
     return {
         "quality": _read_setting(db, user_id, "quality") or "高品质",
         "qualities": list(config.QUALITIES),
         "show_lyrics": bool(_read_setting(db, user_id, "show_lyrics")),
+        "asset_source": source if source in config.ASSET_SOURCES else config.DEFAULT_ASSET_SOURCE,
+        "asset_sources": list(config.ASSET_SOURCES),
     }
 
 

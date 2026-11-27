@@ -17,7 +17,8 @@ from sqlalchemy import func, select
 from . import config
 from .db import Base, SessionLocal, engine, ensure_columns
 from .errors import ApiError
-from .models import Playlist, Song, User
+from .models import Playlist, Setting, Song, User
+from .security import decode_token
 from .routers import (
     assets,
     auth,
@@ -60,6 +61,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def asset_source_middleware(request: Request, call_next):
+    """按当前用户设置注入资源数据源（server / oss），默认 server。"""
+    config.set_asset_source(config.DEFAULT_ASSET_SOURCE)
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        try:
+            user_id = decode_token(auth.split(None, 1)[1].strip())["sub"]
+            with SessionLocal() as db:
+                row = db.get(Setting, (user_id, "asset_source"))
+                if row is not None:
+                    import json
+
+                    source = json.loads(row.value)
+                    if source in config.ASSET_SOURCES:
+                        config.set_asset_source(source)
+        except Exception:
+            # 令牌无效或设置损坏时按默认处理，不影响接口本身的鉴权流程
+            pass
+    return await call_next(request)
 
 
 @app.exception_handler(ApiError)

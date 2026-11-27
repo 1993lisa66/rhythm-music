@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import os
 import time
+from contextvars import ContextVar
 from pathlib import Path
 from urllib.parse import quote
 
@@ -142,14 +143,38 @@ def delete_oss_url(key: str) -> str:
     )
 
 
-def asset_url(path: str, ttl: int | None = None) -> str:
-    """库里的 /covers/x.jpg、audio/x.wav 换成私有 Bucket 的签名地址。
+# 资源数据源：server（服务器本地静态文件，默认）或 oss（私有 Bucket 签名地址）。
+# 每个用户可在设置里切换，请求级通过 contextvar 注入，默认 server。
+ASSET_SOURCES = ("server", "oss")
+DEFAULT_ASSET_SOURCE = "server"
+_current_asset_source: ContextVar[str] = ContextVar("asset_source", default=DEFAULT_ASSET_SOURCE)
 
-    未配置 OSS 时原样返回，本地 /covers 静态目录仍可用，方便回退。
+
+def set_asset_source(source: str) -> None:
+    _current_asset_source.set(source if source in ASSET_SOURCES else DEFAULT_ASSET_SOURCE)
+
+
+def get_asset_source() -> str:
+    return _current_asset_source.get()
+
+
+def local_asset_url(path: str) -> str:
+    """服务器本地静态资源：库里存的都是 /covers/x.jpg、audio/x.mp3 形式，
+    统一补前导斜杠，前端直接以站点根路径访问（Nginx 已挂载 /covers/ 与 /audio/）。"""
+    key = path.lstrip("/")
+    return f"/{key}"
+
+
+def asset_url(path: str, ttl: int | None = None) -> str:
+    """按当前用户的数据源设置返回资源地址。
+
+    - server：返回服务器本地静态路径（默认）；
+    - oss：返回私有 Bucket 的签名地址；
+    - 未配置 OSS 时无论选哪个都退回本地路径。
     """
     if not path or path.startswith(("http://", "https://", "data:")):
         return path
-    if not oss_ready():
-        return path
-    return sign_oss_url(path, ttl)
+    if get_asset_source() == "oss" and oss_ready():
+        return sign_oss_url(path, ttl)
+    return local_asset_url(path)
 

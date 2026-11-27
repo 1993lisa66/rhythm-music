@@ -66,9 +66,16 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # 服务器本地静态资源（数据源=server）：封面 / 音频直接由 Nginx 提供
     location /covers/ {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
+        alias /www/wwwroot/rhythm-music-api/static/covers/;
+        expires 12h;
+    }
+
+    location /audio/ {
+        alias /www/wwwroot/rhythm-music-api/static/audio/;
+        expires 24h;
+        add_header Accept-Ranges bytes;
     }
 
     location /assets/ {
