@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import PageNav from '@/components/PageNav.vue'
@@ -19,6 +19,24 @@ const upNext = computed(() => {
   return queueSongs.value.slice(start).map((song, i) => ({ song, index: start + i }))
 })
 const remainText = computed(() => `${upNext.value.length} 首`)
+
+/* 待播经常上百首，一次性铺开会把页面拉到七八千像素，
+   想看清「接下来几首」反而要滚半天；默认只露 10 首，其余按需展开 */
+const STEP = 10
+const expanded = ref(false)
+const visibleUpNext = computed(() => (expanded.value ? upNext.value : upNext.value.slice(0, STEP)))
+const hiddenCount = computed(() => Math.max(0, upNext.value.length - STEP))
+
+const moreEl = ref(null)
+const toggleExpand = async () => {
+  expanded.value = !expanded.value
+  /* 收起时页面骤然变矮，浏览器会钳住 scrollTop，
+     顺手把「展开」按钮滚回视野，免得用户找不到列表了 */
+  if (!expanded.value) {
+    await nextTick()
+    moreEl.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }
+}
 
 const jump = (index) => playAt(index)
 
@@ -80,7 +98,7 @@ const openNow = () => router.push('/now')
       </div>
 
       <ul v-if="upNext.length" class="list">
-        <li v-for="(item, i) in upNext" :key="item.song.id + item.index" class="item">
+        <li v-for="(item, i) in visibleUpNext" :key="item.song.id + item.index" class="item">
           <button type="button" class="item__main" @click="jump(item.index)">
             <span class="item__idx num">{{ String(i + 1).padStart(2, '0') }}</span>
             <span class="item__cover" :style="coverStyle(item.song.cover)"></span>
@@ -95,7 +113,21 @@ const openNow = () => router.push('/now')
         </li>
       </ul>
 
-      <p v-else class="list__empty">后面没有待播歌曲了，去乐库添几首吧</p>
+      <button
+        v-if="hiddenCount"
+        ref="moreEl"
+        type="button"
+        class="more"
+        :aria-expanded="expanded"
+        @click="toggleExpand"
+      >
+        <span>{{ expanded ? '收起' : `展开剩余 ${hiddenCount} 首` }}</span>
+        <span class="more__icon" :class="{ 'more__icon--up': expanded }">
+          <Icon name="chevron" :size="14" :stroke="2" />
+        </span>
+      </button>
+
+      <p v-if="!upNext.length" class="list__empty">后面没有待播歌曲了，去乐库添几首吧</p>
     </div>
 
     <ActionSheet
@@ -119,7 +151,7 @@ const openNow = () => router.push('/now')
 
 .queue {
   height: auto;
-  min-height: 800px;
+  min-height: 100%;
   padding: 92px 24px 140px;
 }
 
@@ -318,5 +350,38 @@ const openNow = () => router.push('/now')
 
 .item__del:hover {
   color: #c4543f;
+}
+
+/* 展开/收起：44px 高的整行按钮，比角落小链接好点得多 */
+.more {
+  margin-top: 12px;
+  width: 100%;
+  height: 44px;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-sub);
+  transition: color 0.16s ease, transform 0.16s ease;
+}
+
+.more:active {
+  transform: scale(0.99);
+  color: var(--primary);
+}
+
+.more__icon {
+  display: grid;
+  place-items: center;
+  transform: rotate(90deg);
+  transition: transform 0.2s ease;
+}
+
+.more__icon--up {
+  transform: rotate(-90deg);
 }
 </style>

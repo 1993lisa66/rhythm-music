@@ -85,7 +85,7 @@ onMounted(async () => {
 <style scoped>
 .mylists {
   height: auto;
-  min-height: 800px;
+  min-height: 100%;
   padding: 92px 24px 140px;
 }
 

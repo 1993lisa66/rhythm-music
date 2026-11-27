@@ -374,7 +374,7 @@ const onPick = async (key) => {
 /* 整页走文档流：标题两行时后面的信息/按钮/曲目会自动下推，不再互相压住 */
 .playlist {
   height: auto;
-  min-height: 800px;
+  min-height: 100%;
   padding: 92px 24px 150px;
 }
 

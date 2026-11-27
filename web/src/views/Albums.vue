@@ -69,7 +69,7 @@ onMounted(async () => {
 <style scoped>
 .albums {
   height: auto;
-  min-height: 800px;
+  min-height: 100%;
   padding: 92px 24px 150px;
 }
 

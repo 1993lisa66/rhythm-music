@@ -205,16 +205,20 @@ const confirmRemove = async () => {
 <style scoped>
 .songs {
   height: auto;
-  min-height: 800px;
+  min-height: 100%;
   padding: 92px 24px 150px;
 }
 
 .link {
   font-size: 13px;
   line-height: 22px;
-  /* 22 + 上下各 11 = 44px 最小热区，视觉位置不变 */
-  padding: 11px 12px;
-  margin: -11px -12px;
+  /* 44 × 44 达标热区：两字文案本身只有 26px 宽，
+     靠 min-width 撑到 44，仍由导航 flex 垂直居中，视觉位置不变 */
+  min-width: 44px;
+  height: 44px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
   color: var(--ink-sub);
   transition: color 0.16s ease;
 }

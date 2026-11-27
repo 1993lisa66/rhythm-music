@@ -252,8 +252,10 @@ textarea:focus-visible {
     padding-bottom: var(--sab);
   }
 
+  /* 手机上画布就填满可视区，不再兜 800px —— 写死 800 会在小屏
+     （如 375×667）余出上百像素空白，短页面能空拖一整屏 */
   .page__canvas {
     height: 100%;
-    min-height: 800px;
+    min-height: 100%;
   }
 }

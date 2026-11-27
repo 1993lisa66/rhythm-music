@@ -131,7 +131,7 @@ watch(name, (value) => load(value))
 <style scoped>
 .artist {
   height: auto;
-  min-height: 800px;
+  min-height: 100%;
   padding: 92px 24px 150px;
 }
 
