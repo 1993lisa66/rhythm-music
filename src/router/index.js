@@ -7,6 +7,7 @@ import Profile from '../views/Profile.vue'
 import Playlist from '../views/Playlist.vue'
 import Album from '../views/Album.vue'
 import Albums from '../views/Albums.vue'
+import Songs from '../views/Songs.vue'
 import Artist from '../views/Artist.vue'
 import NowPlaying from '../views/NowPlaying.vue'
 import Queue from '../views/Queue.vue'
@@ -62,6 +63,12 @@ const routes = [
     name: 'queue',
     component: Queue,
     meta: { tab: 'discover', title: '播放队列', subpage: true }
+  },
+  {
+    path: '/songs',
+    name: 'songs',
+    component: Songs,
+    meta: { tab: 'library', title: '全部歌曲', subpage: true }
   },
   {
     path: '/albums',

@@ -58,22 +58,16 @@ onMounted(async () => {
         </template>
       </PageNav>
 
-      <ul class="list">
-        <li v-for="p in playlists" :key="p.id" class="item">
-          <button type="button" class="item__main" @click="open(p)">
-            <span class="item__cover" :style="coverStyle(p.cover, 0.32)">
-              <span class="item__note">
-                <Icon name="note" :size="18" :stroke="1.7" />
-              </span>
-            </span>
-            <span class="item__text">
-              <span class="item__title">{{ p.title }}</span>
-              <span class="item__sub">{{ p.badge }} · {{ p.count }} 首 · {{ p.durationText }}</span>
-            </span>
-            <Icon class="item__chevron" name="chevron" :size="14" :stroke="1.8" />
-          </button>
-        </li>
-      </ul>
+      <!-- 与「全部专辑」一致的 2 列封面网格 -->
+      <div class="grid">
+        <button v-for="p in playlists" :key="p.id" type="button" class="card" @click="open(p)">
+          <span class="card__cover" :style="coverStyle(p.cover, 0.28)">
+            <span class="card__count">{{ p.count }} 首</span>
+          </span>
+          <span class="card__title">{{ p.title }}</span>
+          <span class="card__sub">{{ p.badge }} · {{ p.durationText }}</span>
+        </button>
+      </div>
 
       <p class="tip">共 {{ playlists.length }} 个歌单，点击进入查看曲目</p>
     </div>
@@ -114,94 +108,76 @@ onMounted(async () => {
   background: rgba(224, 120, 86, 0.18);
 }
 
-.list {
-  border-radius: var(--r-card);
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
-  padding: 6px 0;
-  overflow: hidden;
+/* 2 列网格：封面 152×116，与「全部专辑」同规格 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 14px;
 }
 
-.item {
-  display: flex;
-  align-items: center;
-}
-
-.item + .item {
-  box-shadow: inset 0 1px 0 rgba(43, 31, 26, 0.045);
-}
-
-.item__main {
-  flex: 1 1 auto;
+.card {
   min-width: 0;
-  height: 74px;
-  padding: 0 14px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
   text-align: left;
+  transition: transform 0.18s ease;
 }
 
-.item__cover {
+.card:active {
+  transform: scale(0.98);
+}
+
+.card__cover {
   position: relative;
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
+  display: block;
+  width: 100%;
+  aspect-ratio: 152 / 116;
+  border-radius: var(--r-card);
   background-color: var(--surface-cover);
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
+  box-shadow: 0 6px 16px rgba(224, 120, 86, 0.12);
   overflow: hidden;
 }
 
-.item__note {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.28);
+.card__count {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: rgba(43, 31, 26, 0.34);
   color: #fff;
-  display: grid;
-  place-items: center;
-  backdrop-filter: blur(2px);
+  font-size: 10px;
+  line-height: 20px;
+  backdrop-filter: blur(4px);
 }
 
-.item__text {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.item__title {
-  font-size: 15px;
+.card__title {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 19px;
+  line-height: 18px;
   color: var(--ink);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.item__sub {
-  font-size: 11px;
-  line-height: 14px;
+.card__sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 16px;
   color: var(--ink-sub);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.item__chevron {
-  color: var(--placeholder);
-  flex: 0 0 auto;
-}
-
 .tip {
-  margin-top: 14px;
-  text-align: center;
-  font-size: 11px;
-  line-height: 15px;
+  margin-top: 22px;
+  font-size: 12px;
+  line-height: 17px;
   color: var(--placeholder);
+  text-align: center;
 }
 </style>
